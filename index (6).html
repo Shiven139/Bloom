@@ -1,0 +1,1966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>Thought Garden</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Thought Garden">
+<meta name="theme-color" content="#1200cc">
+<link rel="apple-touch-icon" id="ati" href="">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Instrument+Serif:ital@0;1&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+/* DEFAULT = DARK (navy/purple) */
+:root{
+  --p:#1200cc;--pb:#1a00ff;--pd:#0d00aa;--acc:#f4f3ff;
+  --txt:rgba(255,255,255,.96);--muted:rgba(255,255,255,.5);
+  --cbg:rgba(255,255,255,.11);--cbrd:rgba(255,255,255,.16);
+  --navbg:rgba(13,0,150,.82);
+  --nh:64px;--sb:env(safe-area-inset-bottom,0px);--st:env(safe-area-inset-top,0px);
+  --pad:clamp(16px,5vw,28px);--r:clamp(12px,3vw,18px);
+  --ff:'DM Sans',sans-serif;
+}
+/* LIGHT MODE = data-night="1" (parchment) */
+body[data-night="1"]{
+  --p:#e8e4d8;--pb:#f0ede0;--pd:#d8d4c0;--acc:#1a1410;
+  --txt:rgba(25,18,5,.9);--muted:rgba(25,18,5,.45);
+  --cbg:rgba(25,18,5,.07);--cbrd:rgba(25,18,5,.14);
+  --navbg:rgba(230,226,215,.92);
+}
+body[data-pal="forest"]{--p:#1a5c2a;--pb:#227a38;--pd:#124020;--acc:#f0fff4;}
+body[data-pal="terra"]{--p:#8b2e0a;--pb:#b34a1e;--pd:#6b2208;--acc:#fff5f0;}
+body[data-pal="indigo"]{--p:#2d1166;--pb:#4a1a99;--pd:#200c4d;--acc:#f5f0ff;}
+body[data-pal="midnight"]{--p:#0d0d1a;--pb:#1a1a35;--pd:#05050f;--acc:#e8e8f5;}
+body[data-hand="1"]{--ff:'Caveat',cursive;}
+html,body{height:100%;width:100%;overflow:hidden;}
+body{font-family:var(--ff);background:var(--pb);color:var(--txt);position:relative;transition:background .8s,color .5s;}
+#lc{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;}
+#app{position:relative;z-index:1;width:100%;height:100dvh;max-width:560px;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;}
+#views-wrapper{position:relative;flex:1;min-height:0;overflow:hidden;}
+
+/* VIEWS */
+.view{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .28s,transform .28s;transform:translateY(8px);}
+.view.active{opacity:1;pointer-events:all;transform:translateY(0);}
+.sb{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;min-height:0;}
+.sb::-webkit-scrollbar{display:none;}
+/* Today view: header stays put, content scrolls cleanly beneath it */
+#view-today{overflow:hidden;}
+#view-today .vh{flex-shrink:0;}
+#view-today #write-mode,#view-today #read-mode{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
+#view-today #write-mode::-webkit-scrollbar,#view-today #read-mode::-webkit-scrollbar{display:none;}
+
+/* NAV */
+#nav{
+  position:fixed;
+  bottom:0;left:50%;
+  transform:translateX(-50%);
+  z-index:100;
+  width:100%;
+  max-width:560px;
+  flex-shrink:0;
+  padding:10px 0 calc(10px + var(--sb));
+  background:var(--navbg);
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+  border-top:1px solid rgba(128,128,128,.2);
+  transition:background .5s;
+  box-shadow:0 -4px 24px rgba(0,0,0,.18);
+}
+.nb{background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--muted);font-family:var(--ff);font-size:clamp(10px,2.5vw,12px);font-weight:500;letter-spacing:.04em;padding:6px clamp(18px,6vw,40px);transition:color .2s,transform .2s;min-width:64px;-webkit-tap-highlight-color:transparent;}
+.nb svg{width:clamp(22px,5.5vw,26px);height:clamp(22px,5.5vw,26px);}
+.nb.active{color:var(--txt);}.nb.active svg{filter:drop-shadow(0 0 5px rgba(128,128,255,.5));}
+.nb:active{transform:scale(.88);}
+/* push content above fixed nav */
+#views-wrapper{padding-bottom:calc(64px + var(--sb));}
+
+/* HEADERS */
+.vh{padding:calc(var(--st) + clamp(44px,9vh,64px)) var(--pad) clamp(10px,2.5vw,16px);flex-shrink:0;}
+.eyebrow{font-size:clamp(10px,2.4vw,12px);font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+.h1{font-family:'Instrument Serif',serif;font-size:clamp(24px,7vw,40px);line-height:1.06;font-weight:400;}
+.h1 em{font-style:italic;opacity:.65;}
+.appbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:clamp(12px,3vw,18px);}
+.appbar-logo{display:flex;align-items:center;gap:9px;}
+.appbar-logo svg{width:clamp(26px,6.5vw,34px);height:clamp(26px,6.5vw,34px);}
+.appbar-name{font-family:'Instrument Serif',serif;font-size:clamp(14px,3.6vw,18px);font-weight:400;font-style:italic;opacity:.8;}
+.appbar-btns{display:flex;gap:8px;}
+.icon-btn{width:clamp(32px,8vw,40px);height:clamp(32px,8vw,40px);background:var(--cbg);border:1px solid var(--cbrd);border-radius:50%;color:var(--txt);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;flex-shrink:0;}
+.icon-btn svg{width:clamp(14px,3.5vw,17px);height:clamp(14px,3.5vw,17px);}
+.icon-btn:hover{background:rgba(128,128,255,.2);}
+
+/* CARDS */
+.card{display:flex;align-items:center;gap:clamp(10px,3vw,16px);padding:clamp(11px,2.8vw,16px);background:var(--cbg);border:1px solid var(--cbrd);border-radius:var(--r);margin-bottom:clamp(10px,2.5vw,14px);}
+.dthumb{width:clamp(40px,10vw,52px);height:clamp(40px,10vw,52px);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.dthumb svg,.dthumb-svg svg{width:100%;height:100%;}
+.dn{font-size:clamp(13px,3vw,15px);font-weight:500;margin-bottom:2px;}
+.ds{font-size:clamp(11px,2.4vw,13px);color:var(--muted);}
+
+/* THIS DAY LAST YEAR */
+.tdy-banner{background:var(--cbg);border:1px solid var(--cbrd);border-radius:var(--r);padding:clamp(12px,3vw,16px);margin-bottom:clamp(10px,2.5vw,14px);cursor:pointer;transition:background .2s;}
+.tdy-banner:hover{background:rgba(128,128,255,.2);}
+.tdy-top{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.tdy-icon{width:28px;height:28px;flex-shrink:0;}
+.tdy-icon svg{width:100%;height:100%;}
+.tdy-label{font-size:clamp(10px,2.3vw,12px);font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+.tdy-text{font-size:clamp(13px,3.2vw,15px);line-height:1.65;font-weight:300;color:var(--txt);opacity:.88;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+
+/* MOOD PICKER - hidden */
+.mood-section{display:none!important;}
+.mood-label{display:none!important;}
+
+/* PROMPTS */
+.prompt-hint{font-size:clamp(13px,3.2vw,15px);color:var(--muted);font-style:italic;position:absolute;pointer-events:none;padding:clamp(12px,3vw,16px);top:0;left:0;right:0;opacity:0;transition:opacity .6s;font-family:var(--ff);}
+.prompt-hint.show{opacity:1;}
+.ta-wrap{position:relative;}
+
+/* TEXTAREA */
+.mta{width:100%;min-height:clamp(120px,27vw,180px);background:var(--cbg);border:1.5px solid var(--cbrd);border-radius:var(--r);padding:clamp(12px,3vw,16px);color:var(--txt);font-family:var(--ff);font-size:clamp(14px,3.5vw,17px);line-height:1.75;font-weight:300;resize:none;outline:none;transition:border-color .2s,background .2s;margin-bottom:6px;}
+.mta::placeholder{color:transparent;}
+.mta:focus{border-color:rgba(128,128,255,.45);background:rgba(128,128,255,.14);}
+.cc-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:clamp(10px,2.5vw,14px);}
+.cc{font-size:11px;color:var(--muted);}
+.mic-btn{width:30px;height:30px;border-radius:50%;background:var(--cbg);border:1px solid var(--cbrd);color:var(--txt);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;}
+.mic-btn svg{width:14px;height:14px;}
+.mic-btn.recording{background:rgba(255,60,60,.4);border-color:rgba(255,60,60,.6);animation:pulse .8s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.6;}}
+
+/* PHOTO STRIP */
+.pstrip{margin-bottom:clamp(10px,2.5vw,14px);}
+.pstrip::-webkit-scrollbar{display:none;}
+.pinner{display:flex;flex-direction:column;gap:clamp(8px,2vw,10px);}
+.pinner-photos{display:flex;gap:clamp(8px,2vw,10px);flex-wrap:wrap;}
+.ptw{position:relative;flex-shrink:0;}
+.ptw img{width:clamp(76px,18vw,96px);height:clamp(76px,18vw,96px);border-radius:clamp(10px,2.5vw,14px);object-fit:cover;display:block;}
+.ptrm{position:absolute;top:-5px;right:-5px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,40,.85);border:1.5px solid rgba(255,255,255,.3);color:var(--acc);font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.apb{width:100%;padding:clamp(10px,2.5vw,14px);background:var(--cbg);border:1.5px dashed rgba(128,128,128,.35);border-radius:clamp(10px,2.5vw,14px);color:var(--muted);display:flex;flex-direction:row;align-items:center;justify-content:center;gap:8px;cursor:pointer;font-size:clamp(12px,3vw,14px);transition:background .2s;}
+.apb:hover{background:rgba(128,128,255,.18);}
+.apb svg{width:clamp(18px,4.5vw,20px);height:clamp(18px,4.5vw,20px);opacity:.55;flex-shrink:0;}
+input[type=file]{display:none;}
+
+/* LOCKED FLOWER */
+.flower-locked{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px 0 8px;opacity:.38;}
+.flower-locked svg{width:52px;height:52px;}
+.flower-locked-label{font-size:clamp(11px,2.5vw,13px);color:var(--muted);font-style:italic;}
+.flower-reveal{text-align:center;padding:12px 0 4px;}
+.flower-reveal svg{width:clamp(56px,14vw,76px);height:clamp(56px,14vw,76px);display:block;margin:0 auto 6px;}
+.flower-reveal-name{font-family:'Instrument Serif',serif;font-size:clamp(16px,4vw,20px);font-weight:400;margin-bottom:2px;}
+.flower-reveal-desc{font-size:clamp(11px,2.5vw,13px);color:var(--muted);font-style:italic;line-height:1.5;}
+.weather-tag{display:inline-flex;align-items:center;gap:5px;background:var(--cbg);border:1px solid var(--cbrd);border-radius:100px;padding:3px 10px;font-size:clamp(10px,2.3vw,12px);color:var(--muted);margin-bottom:10px;}
+.weather-tag svg{width:14px;height:14px;flex-shrink:0;}
+
+/* BUTTONS */
+.btnp{width:100%;padding:clamp(12px,3.2vw,16px);background:var(--acc);color:var(--p);border:none;border-radius:100px;font-family:var(--ff);font-size:clamp(14px,3.5vw,16px);font-weight:600;cursor:pointer;transition:transform .15s,box-shadow .15s,opacity .2s;}
+.btnp:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(0,0,0,.22);}
+.btnp:active{transform:none;}.btnp:disabled{opacity:.4;cursor:default;}
+.btng{background:var(--cbg);border:1.5px solid var(--cbrd);color:var(--txt);padding:clamp(9px,2.4vw,12px) clamp(16px,4vw,22px);border-radius:100px;font-family:var(--ff);font-size:clamp(12px,2.8vw,14px);font-weight:500;cursor:pointer;transition:background .2s;display:inline-flex;align-items:center;gap:7px;}
+.btng:hover{background:rgba(128,128,255,.22);}
+.btng svg{width:14px;height:14px;flex-shrink:0;}
+.btnd{background:rgba(255,50,50,.12);border-color:rgba(255,80,80,.24);color:rgba(255,155,155,.9);}
+.btnd:hover{background:rgba(255,50,50,.22);}
+
+/* STREAK / PILLS */
+.spill{display:inline-flex;align-items:center;gap:6px;background:var(--cbg);border:1px solid var(--cbrd);padding:5px clamp(10px,2.5vw,14px);border-radius:100px;font-size:clamp(11px,2.4vw,13px);color:var(--muted);margin-bottom:clamp(12px,3vw,18px);}
+.spill svg{width:14px;height:14px;flex-shrink:0;}
+.mood-pill{display:inline-flex;align-items:center;gap:5px;background:var(--cbg);border:1px solid var(--cbrd);padding:4px 10px;border-radius:100px;font-size:clamp(10px,2.3vw,12px);color:var(--muted);margin-bottom:8px;margin-right:6px;}
+.mood-pill svg{width:13px;height:13px;}
+
+/* READ PHOTO GRID */
+.pgrid{display:flex;gap:clamp(6px,1.5vw,10px);flex-wrap:wrap;margin-bottom:clamp(12px,3vw,18px);}
+.pgrid.one img{width:100%;max-height:clamp(160px,40vw,260px);object-fit:cover;border-radius:clamp(12px,3vw,16px);cursor:pointer;}
+.pgrid.two img{width:calc(50% - clamp(3px,.75vw,5px));aspect-ratio:1;object-fit:cover;border-radius:clamp(10px,2.5vw,14px);cursor:pointer;}
+.pgrid.many img{width:calc(33.33% - clamp(4px,1vw,7px));aspect-ratio:1;object-fit:cover;border-radius:clamp(10px,2.5vw,14px);cursor:pointer;}
+.rdt{font-size:clamp(14px,3.8vw,18px);line-height:1.82;font-weight:300;white-space:pre-wrap;word-break:break-word;color:rgba(255,255,255,.9);margin-bottom:clamp(16px,4vw,22px);}
+body[data-night="1"] .rdt{color:rgba(25,18,5,.9);}
+
+/* GARDEN */
+.gtop{padding:calc(var(--st) + clamp(44px,9vh,64px)) var(--pad) clamp(10px,2vw,14px);display:flex;align-items:flex-end;justify-content:space-between;flex-shrink:0;}
+.gsub{font-size:clamp(11px,2.4vw,13px);color:var(--muted);margin-top:4px;}
+.yn{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.ynb{width:clamp(28px,7vw,36px);height:clamp(28px,7vw,36px);background:var(--cbg);border:none;border-radius:50%;color:var(--txt);cursor:pointer;font-size:clamp(14px,3.5vw,18px);display:flex;align-items:center;justify-content:center;transition:background .2s,transform .15s;}
+.ynb:hover{background:rgba(128,128,255,.22);transform:scale(1.08);}
+.ynb:active{transform:scale(.9);}
+.ylbl{font-size:clamp(13px,3vw,15px);font-weight:500;min-width:38px;text-align:center;}
+.gstats{display:flex;gap:clamp(7px,1.8vw,12px);padding:0 var(--pad);margin-bottom:clamp(10px,2.5vw,16px);flex-shrink:0;}
+.sc{flex:1;background:var(--cbg);border-radius:var(--r);padding:clamp(9px,2.2vw,14px) clamp(11px,2.8vw,16px);border:1px solid var(--cbrd);}
+.sn{font-family:'Instrument Serif',serif;font-size:clamp(22px,5.5vw,32px);font-weight:400;line-height:1;margin-bottom:2px;}
+.sl{font-size:clamp(10px,2.2vw,12px);color:var(--muted);}
+.garden-actions{padding:0 var(--pad);margin-bottom:clamp(10px,2.5vw,14px);display:flex;gap:8px;flex-shrink:0;}
+.gm{flex:1;overflow-y:auto;padding:0 var(--pad) 24px;}
+.gm::-webkit-scrollbar{display:none;}
+.mb{margin-bottom:clamp(16px,4vw,24px);}
+.mn{font-size:clamp(10px,2.3vw,12px);font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:clamp(7px,1.8vw,10px);}
+.dg{display:grid;grid-template-columns:repeat(7,1fr);gap:clamp(4px,1.1vw,7px);}
+.dc{aspect-ratio:1;border-radius:clamp(7px,1.8vw,11px);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .15s,background .15s,box-shadow .15s;overflow:visible;position:relative;}
+.dc svg{width:64%;height:64%;}
+.dc.mt{background:transparent;cursor:default;pointer-events:none;}
+.dc.blank{background:var(--cbg);border:1.5px solid rgba(128,128,128,.15);cursor:default;}
+.dc.blank .dd{width:4px;height:4px;border-radius:50%;background:rgba(128,128,128,.3);}
+.dc.tdc{border-color:rgba(255,255,255,.44)!important;}
+.dc.tdc .dd{background:rgba(255,255,255,.64)!important;}
+.dc.filled{background:var(--cbg);border:1px solid var(--cbrd);}
+.dc.filled:hover{transform:scale(1.18);background:rgba(128,128,255,.22);z-index:2;box-shadow:0 4px 18px rgba(0,0,0,.3);}
+.dc.future{background:rgba(128,128,128,.06);border:1px solid rgba(128,128,128,.1);opacity:.35;cursor:default;}
+.dc:active:not(.mt):not(.blank):not(.future){transform:scale(.88);}
+.dc.blank-past{cursor:pointer;transition:background .15s,transform .15s;}
+.dc.blank-past:hover{background:rgba(128,128,255,.18);transform:scale(1.1);}
+.dc.blank-past:hover .dd::after{content:'+';position:absolute;font-size:10px;color:var(--muted);line-height:1;}
+.dc.blank-past .dd{position:relative;display:flex;align-items:center;justify-content:center;}
+.dc.seasonal::after{content:'';position:absolute;inset:-2px;border-radius:inherit;border:1.5px solid rgba(255,220,80,.6);pointer-events:none;animation:seasonGlow 2s ease-in-out infinite;}
+@keyframes seasonGlow{0%,100%{opacity:.6;}50%{opacity:1;}}
+/* milestone badge */
+.dc.milestone::before{content:'★';position:absolute;top:-4px;right:-4px;font-size:8px;color:rgba(255,220,80,.9);z-index:3;}
+
+/* ENTRY VIEW */
+.etop{padding:calc(var(--st) + clamp(44px,9vh,64px)) var(--pad) clamp(12px,2.5vw,18px);display:flex;align-items:center;gap:clamp(10px,2.5vw,16px);flex-shrink:0;}
+.bbtn{width:clamp(34px,8vw,42px);height:clamp(34px,8vw,42px);background:var(--cbg);border:none;border-radius:50%;color:var(--txt);cursor:pointer;font-size:clamp(16px,4vw,20px);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s,transform .15s;}
+.bbtn:hover{background:rgba(128,128,255,.22);}.bbtn:active{transform:scale(.88);}
+.edtop{flex:1;}
+.ed-dow{font-size:clamp(10px,2.4vw,12px);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;}
+.ed-day{font-family:'Instrument Serif',serif;font-size:clamp(20px,5.5vw,32px);font-weight:400;line-height:1.05;}
+.ed-yr{font-family:'Instrument Serif',serif;font-style:italic;font-size:clamp(17px,4.5vw,26px);opacity:.6;display:block;margin-top:1px;}
+.ebody{flex:1;overflow-y:auto;padding:0 var(--pad) 28px;}
+.ebody::-webkit-scrollbar{display:none;}
+.edoodle{display:flex;justify-content:center;margin-bottom:clamp(10px,2.5vw,16px);}
+.edoodle svg{width:clamp(56px,14vw,88px);height:clamp(56px,14vw,88px);}
+.edlbl{text-align:center;font-size:clamp(10px,2.3vw,12px);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:clamp(14px,3.5vw,20px);}
+.etxt{font-size:clamp(14px,3.8vw,18px);line-height:1.85;font-weight:300;white-space:pre-wrap;word-break:break-word;color:rgba(255,255,255,.9);margin-bottom:clamp(18px,4.5vw,26px);}
+body[data-night="1"] .etxt{color:rgba(25,18,5,.9);}
+.eacts{display:flex;gap:clamp(8px,2vw,12px);}
+
+/* SEARCH VIEW */
+.search-top{padding:calc(var(--st) + clamp(44px,9vh,64px)) var(--pad) clamp(10px,2vw,14px);flex-shrink:0;}
+.search-input-wrap{position:relative;margin-bottom:clamp(12px,3vw,16px);}
+.search-input{width:100%;padding:clamp(11px,2.8vw,14px) clamp(12px,3vw,16px) clamp(11px,2.8vw,14px) clamp(42px,10vw,50px);background:var(--cbg);border:1.5px solid var(--cbrd);border-radius:100px;color:var(--txt);font-family:var(--ff);font-size:clamp(14px,3.5vw,16px);outline:none;transition:border-color .2s;}
+.search-input::placeholder{color:var(--muted);}
+.search-input:focus{border-color:rgba(128,128,255,.45);}
+.search-icon{position:absolute;left:clamp(14px,3.5vw,18px);top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--muted);pointer-events:none;}
+.search-results{flex:1;overflow-y:auto;padding:0 var(--pad) 24px;}
+.search-results::-webkit-scrollbar{display:none;}
+.search-card{display:flex;align-items:flex-start;gap:12px;padding:clamp(11px,2.8vw,15px);background:var(--cbg);border:1px solid var(--cbrd);border-radius:var(--r);margin-bottom:clamp(8px,2vw,12px);cursor:pointer;transition:background .2s;}
+.search-card:hover{background:rgba(128,128,255,.18);}
+.search-doodle{width:40px;height:40px;flex-shrink:0;}
+.search-doodle svg{width:100%;height:100%;}
+.search-meta{font-size:clamp(10px,2.3vw,12px);color:var(--muted);margin-bottom:4px;font-weight:500;}
+.search-text{font-size:clamp(13px,3.2vw,15px);line-height:1.55;color:var(--txt);opacity:.9;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.search-mood{font-size:11px;color:var(--muted);}
+.search-empty{text-align:center;padding:60px 20px;color:var(--muted);}
+.search-empty svg{width:48px;height:48px;margin:0 auto 16px;opacity:.4;}
+
+/* SETTINGS SHEET */
+.sheet-ov{position:fixed;inset:0;background:rgba(0,0,40,.65);z-index:150;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .25s;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
+.sheet-ov.open{opacity:1;pointer-events:all;}
+.sheet{width:100%;max-width:560px;margin:0 auto;background:color-mix(in srgb, var(--p) 95%, black);border-radius:clamp(18px,5vw,26px) clamp(18px,5vw,26px) 0 0;padding:clamp(14px,3.5vw,20px) var(--pad) calc(clamp(14px,3.5vw,20px) + var(--sb));transform:translateY(100%);transition:transform .32s cubic-bezier(.34,1.12,.64,1);max-height:88vh;overflow-y:auto;border-top:1px solid rgba(255,255,255,.15);touch-action:pan-y;}
+.sheet-ov.open .sheet{transform:translateY(0);}
+.sheet::-webkit-scrollbar{display:none;}
+.sheet-handle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:clamp(14px,3.5vw,18px);}
+.sheet-handle{width:44px;height:5px;background:rgba(255,255,255,.35);border-radius:3px;margin:0 auto;cursor:grab;flex-shrink:0;}
+.sheet-close{width:36px;height:36px;background:rgba(255,255,255,.13);border:none;border-radius:50%;color:var(--txt);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1;flex-shrink:0;transition:background .2s;-webkit-tap-highlight-color:transparent;}
+.sheet-close:hover,.sheet-close:active{background:rgba(255,255,255,.25);}
+.sheet-title{font-family:'Instrument Serif',serif;font-size:clamp(20px,5vw,26px);margin-bottom:clamp(18px,4.5vw,24px);}
+.settings-group{margin-bottom:clamp(18px,4.5vw,24px);}
+.settings-group-label{font-size:clamp(10px,2.3vw,12px);font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:clamp(10px,2.5vw,12px);}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:clamp(11px,2.8vw,14px) 0;border-bottom:1px solid var(--cbrd);}
+.settings-row:last-child{border-bottom:none;}
+.settings-row-label{font-size:clamp(13px,3.2vw,15px);font-weight:400;}
+.settings-row-sub{font-size:clamp(11px,2.4vw,12px);color:var(--muted);margin-top:2px;}
+/* Toggle */
+.toggle{width:44px;height:26px;border-radius:13px;background:rgba(128,128,128,.3);cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;border:none;}
+.toggle.on{background:var(--acc);}.toggle.on::after{left:20px;}
+.toggle::after{content:'';position:absolute;width:20px;height:20px;background:white;border-radius:50%;top:3px;left:3px;transition:left .2s;}
+/* Palette selector */
+.pal-row{display:flex;gap:10px;flex-wrap:wrap;}
+.pal-dot{width:36px;height:36px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:transform .15s,border-color .15s;display:flex;align-items:center;justify-content:center;}
+.pal-dot.active{border-color:rgba(255,255,255,.8);transform:scale(1.12);}
+.pal-dot:active{transform:scale(.9);}
+/* Font toggle */
+.font-opts{display:flex;gap:8px;}
+.font-opt{padding:8px 18px;background:var(--cbg);border:1.5px solid var(--cbrd);border-radius:100px;cursor:pointer;font-size:clamp(12px,3vw,14px);color:var(--txt);transition:background .2s;}
+.font-opt.active{background:rgba(128,128,255,.25);border-color:rgba(255,255,255,.5);}
+
+/* SUB-VIEWS (year in review, emotional arc, year walk) */
+.subview{position:fixed;inset:0;background:var(--pb);z-index:200;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .28s,transform .28s;transform:translateY(20px);}
+.subview.open{opacity:1;pointer-events:all;transform:translateY(0);}
+.subview-header{padding:calc(var(--st) + clamp(44px,9vh,64px)) var(--pad) clamp(12px,3vw,18px);display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.subview-body{flex:1;overflow-y:auto;padding:0 var(--pad) calc(var(--sb) + 24px);}
+.subview-body::-webkit-scrollbar{display:none;}
+.subview-h1{font-family:'Instrument Serif',serif;font-size:clamp(24px,6.5vw,38px);font-weight:400;line-height:1.1;}
+
+/* YEAR IN REVIEW */
+.yr-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(8px,2vw,12px);margin-bottom:clamp(16px,4vw,22px);}
+.yr-stat{background:var(--cbg);border:1px solid var(--cbrd);border-radius:var(--r);padding:clamp(14px,3.5vw,20px);}
+.yr-stat-num{font-family:'Instrument Serif',serif;font-size:clamp(28px,7vw,40px);font-weight:400;line-height:1;}
+.yr-stat-lbl{font-size:clamp(11px,2.5vw,13px);color:var(--muted);margin-top:4px;}
+.yr-monthly{margin-bottom:clamp(16px,4vw,22px);}
+.yr-month-bar-wrap{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.yr-month-name{font-size:clamp(10px,2.3vw,12px);color:var(--muted);width:30px;flex-shrink:0;}
+.yr-month-bar-bg{flex:1;height:8px;background:var(--cbg);border-radius:4px;overflow:hidden;}
+.yr-month-bar{height:100%;background:var(--acc);border-radius:4px;transition:width .8s cubic-bezier(.25,.46,.45,.94);}
+.yr-month-count{font-size:clamp(10px,2.3vw,12px);color:var(--muted);width:20px;text-align:right;flex-shrink:0;}
+.yr-mood-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:clamp(10px,2.5vw,14px);}
+.yr-mood-item{display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--cbg);border:1px solid var(--cbrd);border-radius:clamp(10px,2.5vw,14px);padding:10px 12px;}
+.yr-mood-item svg{width:28px;height:28px;}
+.yr-mood-item span{font-size:10px;color:var(--muted);}
+.yr-section-label{font-size:clamp(10px,2.3vw,12px);font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:clamp(10px,2.5vw,12px);margin-top:clamp(16px,4vw,20px);}
+
+/* EMOTIONAL ARC */
+#arc-canvas{width:100%;border-radius:var(--r);background:var(--cbg);border:1px solid var(--cbrd);display:block;margin-bottom:clamp(14px,3.5vw,20px);}
+.arc-legend{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:clamp(14px,3.5vw,20px);}
+.arc-leg-item{display:flex;align-items:center;gap:5px;background:var(--cbg);border:1px solid var(--cbrd);border-radius:100px;padding:4px 10px;}
+.arc-leg-item svg{width:14px;height:14px;}
+.arc-leg-item span{font-size:clamp(10px,2.3vw,12px);color:var(--muted);}
+
+/* YEAR WALK */
+.walk-entry{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;padding:clamp(40px,10vw,60px) var(--pad) clamp(60px,15vw,80px);flex-shrink:0;}
+.walk-date{font-size:clamp(10px,2.3vw,12px);color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;}
+.walk-doodle{width:clamp(50px,13vw,80px);height:clamp(50px,13vw,80px);margin-bottom:12px;}
+.walk-doodle svg{width:100%;height:100%;}
+.walk-text{font-size:clamp(16px,4.5vw,22px);line-height:1.8;font-weight:300;font-family:var(--ff);}
+.walk-photos{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.walk-photos img{height:clamp(60px,14vw,80px);border-radius:10px;object-fit:cover;}
+.walk-divider{height:1px;background:var(--cbrd);margin:0 var(--pad);}
+.walk-progress{position:fixed;bottom:calc(var(--sb) + 12px);left:50%;transform:translateX(-50%);font-size:12px;color:var(--muted);background:var(--cbg);backdrop-filter:blur(10px);padding:5px 14px;border-radius:100px;z-index:10;}
+
+/* MILESTONE OVERLAY */
+.milestone-ov{position:fixed;inset:0;z-index:250;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(8,4,28,.93);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);opacity:0;pointer-events:none;transition:opacity .4s;text-align:center;padding:40px;color:#f0eeff;}
+.milestone-ov.show{opacity:1;pointer-events:all;}
+.milestone-num{font-family:'Instrument Serif',serif;font-size:clamp(64px,18vw,100px);font-weight:400;line-height:1;margin-bottom:8px;animation:milNum 1s cubic-bezier(.34,1.4,.64,1) both;color:#f0eeff;}
+@keyframes milNum{from{transform:scale(.5);opacity:0;}to{transform:scale(1);opacity:1;}}
+.milestone-label{font-family:'Instrument Serif',serif;font-size:clamp(22px,6vw,32px);font-style:italic;opacity:.85;margin-bottom:6px;color:#f0eeff;}
+.milestone-sub{font-size:clamp(13px,3.2vw,15px);color:rgba(240,238,255,.55);margin-bottom:32px;}
+.milestone-plants{display:flex;justify-content:center;gap:12px;margin-bottom:32px;flex-wrap:wrap;}
+.milestone-plants svg{width:clamp(36px,9vw,52px);height:clamp(36px,9vw,52px);animation:floatUp .6s ease both;}
+@keyframes floatUp{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+
+/* SHARE CARD preview */
+.share-preview{width:100%;border-radius:var(--r);overflow:hidden;margin-bottom:clamp(12px,3vw,16px);}
+.share-preview canvas{width:100%;display:block;}
+
+/* MODAL for edit */
+.mo{position:fixed;inset:0;background:rgba(0,0,40,.65);z-index:150;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .25s;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
+.mo.open{opacity:1;pointer-events:all;}
+.ms{width:100%;max-width:560px;margin:0 auto;background:color-mix(in srgb, var(--p) 95%, black);border-radius:clamp(18px,5vw,26px) clamp(18px,5vw,26px) 0 0;padding:clamp(14px,3.5vw,20px) var(--pad) calc(clamp(14px,3.5vw,20px) + var(--sb));transform:translateY(100%);transition:transform .32s cubic-bezier(.34,1.12,.64,1);max-height:90vh;overflow-y:auto;border-top:1px solid rgba(255,255,255,.15);}
+.mo.open .ms{transform:translateY(0);}
+.ms::-webkit-scrollbar{display:none;}
+.mh{width:36px;height:4px;background:rgba(255,255,255,.28);border-radius:2px;margin:0 auto clamp(14px,3.5vw,18px);}
+.mhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:clamp(12px,3vw,16px);}
+.mhdr span{font-family:'Instrument Serif',serif;font-size:clamp(17px,4.5vw,22px);}
+.mhdr button{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;padding:4px;}
+/* modal mood picker */
+.modal-mood-label{font-size:clamp(10px,2.3vw,12px);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;font-weight:500;}
+
+/* TOAST */
+.toast{position:fixed;bottom:calc(80px + var(--sb));left:50%;transform:translateX(-50%) translateY(14px);background:rgba(255,255,255,.96);color:var(--p);padding:9px clamp(16px,4vw,22px);border-radius:100px;font-size:clamp(12px,2.8vw,14px);font-weight:500;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;z-index:300;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.22);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ANIMATIONS */
+@keyframes popIn{from{transform:scale(.5) rotate(-8deg);opacity:0;}to{transform:scale(1);opacity:1;}}
+.dc.filled{animation:popIn .32s cubic-bezier(.34,1.3,.64,1) both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+.card,.pstrip,.mta,.mood-section{animation:fadeUp .4s ease both;}
+.pstrip{animation-delay:.06s;}.mta{animation-delay:.12s;}.mood-section{animation-delay:.04s;}
+
+/* CRITTERS - handdrawn glassy butterflies (light) and fireflies (dark) */
+#garden-critters{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:3;}
+.critter{position:absolute;will-change:transform;}
+
+/* Butterfly - glassy, hand-doodle strokes, partly transparent */
+.butterfly{filter:drop-shadow(0 1px 3px rgba(100,120,255,.18));}
+.butterfly svg{animation:butterflyFlap .7s ease-in-out infinite alternate;transform-origin:50% 55%;}
+@keyframes butterflyFlap{
+  from{transform:scaleX(1) rotate(-2deg);}
+  to{transform:scaleX(.28) rotate(2deg);}
+}
+
+/* Firefly - handdrawn glowing bug doodle */
+.firefly svg{animation:fireflyPulse 2.4s ease-in-out infinite;}
+@keyframes fireflyPulse{
+  0%,100%{opacity:.12;filter:drop-shadow(0 0 2px rgba(180,255,80,.2));}
+  50%{opacity:.95;filter:drop-shadow(0 0 8px rgba(200,255,60,.85)) drop-shadow(0 0 16px rgba(160,240,40,.5));}
+}
+
+/* Dark mode (default) = butterflies. Light mode (data-night=1) = fireflies */
+body[data-night="1"] .butterfly{display:none!important;}
+body:not([data-night="1"]) .firefly{display:none!important;}
+</style>
+</head>
+<body>
+<canvas id="lc"></canvas>
+<div id="app">
+<div id="views-wrapper">
+
+<!-- TODAY VIEW -->
+<div class="view active" id="view-today">
+  <div class="vh">
+    <div class="appbar">
+      <div class="appbar-logo">
+        <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="33" x2="18" y2="14"/><path d="M18 22C18 22 10 19 9 12Q13 5 18 9"/><path d="M18 18C18 18 26 14 28 7Q24 1 18 5"/><path d="M15 33Q12 31 10 33"/></svg>
+        <span class="appbar-name">Thought Garden</span>
+      </div>
+      <div class="appbar-btns">
+        <button class="icon-btn" id="settings-btn" onclick="openSettings()" title="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="eyebrow" id="t-eyebrow"></div>
+    <div class="h1" id="t-h1"></div>
+  </div>
+  <!-- WRITE MODE -->
+  <div class="sb" id="write-mode">
+    <div style="padding:0 var(--pad) 28px">
+      <div id="tdy-banner-wrap"></div>
+      <div class="card" id="wd-card">
+        <div class="dthumb" id="wd-svg"></div>
+        <div><div class="dn" id="wd-name">Today's plant</div><div class="ds" id="wd-sub">Write your memory to unlock it</div></div>
+      </div>
+      <div class="mood-section">
+        <div class="mood-label">How are you feeling?</div>
+        <div class="mood-grid" id="mood-grid"></div>
+      </div>
+      <div class="pstrip"><div class="pinner" id="w-pinner">
+        <button class="apb" id="w-apb" onclick="triggerAdd('w-fi')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="12" cy="12" r="3"/><path d="M8 5l1.5-2h5L16 5"/></svg>
+          Add photo
+        </button>
+      </div></div>
+      <input type="file" id="w-fi" accept="image/*">
+      <div class="ta-wrap">
+        <textarea class="mta" id="ti" oninput="onTextInput(this)" onfocus="clearPrompt()" rows="5"></textarea>
+        <div class="prompt-hint" id="prompt-hint"></div>
+      </div>
+      <div class="cc-row">
+        <div class="cc" id="cc"></div>
+        <button class="mic-btn" id="mic-btn" onclick="toggleVoice()" title="Voice to text">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0014 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+        </button>
+      </div>
+      <button class="btnp" onclick="saveEntry()">Save Memory</button>
+    </div>
+  </div>
+  <!-- READ MODE -->
+  <div class="sb" id="read-mode" style="display:none">
+    <div style="padding:0 var(--pad) 28px">
+      <div id="tdy-banner-read"></div>
+      <div class="card">
+        <div class="dthumb" id="rd-svg"></div>
+        <div><div class="dn" id="rd-name"></div><div class="ds" id="rd-sub"></div></div>
+      </div>
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:clamp(12px,3vw,16px)">
+        <div class="spill" id="spill"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="10" y1="18" x2="10" y2="8"/><path d="M10 13C10 13 5 11 4.5 7Q7 3 10 5"/><path d="M10 11C10 11 15 8.5 15.5 4.5Q13 1 10 3"/></svg><span id="spill-txt"></span></div>
+        <div id="rd-mood-pill"></div>
+        <div id="rd-weather-tag"></div>
+      </div>
+      <div class="pgrid" id="rd-photos"></div>
+      <div class="rdt" id="rdt"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btng" onclick="openEditModal(todayKey())"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2l4 4-9 9H5v-4L14 2z"/></svg>Edit</button>
+        <button class="btng" onclick="openShareSheet(todayKey())"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M15 8l-3-3-3 3M12 5v9"/><path d="M6 11v4a1 1 0 001 1h10a1 1 0 001-1v-4"/></svg>Share</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GARDEN VIEW -->
+<div class="view" id="view-garden">
+  <div id="garden-critters"></div>
+  <div class="gtop">
+    <div><div class="h1">Your <em>Garden</em></div><div class="gsub" id="gcnt">0 memories planted</div></div>
+    <div class="yn"><button class="ynb" onclick="chYear(-1)">‹</button><span class="ylbl" id="ylbl"></span><button class="ynb" onclick="chYear(1)">›</button></div>
+  </div>
+  <div class="gstats">
+    <div class="sc"><div class="sn" id="st">0</div><div class="sl">memories</div></div>
+    <div class="sc"><div class="sn" id="ss">0</div><div class="sl">streak</div></div>
+    <div class="sc"><div class="sn" id="sp2">0%</div><div class="sl">of year</div></div>
+  </div>
+  <div class="garden-actions">
+    <button class="btng" onclick="surpriseMe()"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M10 2a8 8 0 100 16A8 8 0 0010 2z"/><path d="M10 7v3l2 2"/></svg>Surprise me</button>
+    <button class="btng" onclick="openYearWalk()"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 10h12M12 6l4 4-4 4"/></svg>Year Walk</button>
+  </div>
+  <div class="gm" id="gm"></div>
+</div>
+
+<!-- SEARCH VIEW -->
+<div class="view" id="view-search">
+  <div class="search-top">
+    <div class="h1" style="margin-bottom:clamp(12px,3vw,16px)"><em>Search</em></div>
+    <div class="search-input-wrap">
+      <svg class="search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="9" r="5"/><line x1="13.5" y1="13.5" x2="17" y2="17"/></svg>
+      <input class="search-input" id="search-input" placeholder="Search your memories…" oninput="doSearch(this.value)" autocomplete="off" autocorrect="off">
+    </div>
+  </div>
+  <div class="search-results" id="search-results"><div class="search-empty"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="14"/><path d="M20 22C20 22 11 19 10 11Q14 4 20 8"/><path d="M20 18C20 18 29 15 30 7Q26 1 20 5"/></svg><div style="font-size:15px;font-family:'Instrument Serif',serif;font-style:italic;opacity:.6">Your memories live here</div></div></div>
+</div>
+
+<!-- ENTRY VIEW -->
+<div class="view" id="view-entry">
+  <div class="etop">
+    <button class="bbtn" onclick="goBack()">‹</button>
+    <div class="edtop">
+      <div class="ed-dow" id="e-dow"></div>
+      <div class="ed-day" id="e-day"></div>
+      <em class="ed-yr" id="e-yr"></em>
+    </div>
+  </div>
+  <div class="ebody sb">
+    <div style="padding:0 var(--pad) 28px">
+      <div class="edoodle" id="e-doodle"></div>
+      <div class="edlbl" id="e-dlbl"></div>
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:clamp(12px,3vw,16px)"><div id="e-mood-pill"></div><div id="e-weather-tag"></div></div>
+      <div class="pgrid" id="e-photos"></div>
+      <div class="etxt" id="e-text"></div>
+      <div class="eacts">
+        <button class="btng" onclick="editFromView()"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2l4 4-9 9H5v-4L14 2z"/></svg>Edit</button>
+        <button class="btng" onclick="openShareSheet(openEntryKey)"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M15 8l-3-3-3 3M12 5v9"/><path d="M6 11v4a1 1 0 001 1h10a1 1 0 001-1v-4"/></svg>Share</button>
+        <button class="btng btnd" onclick="delFromView()"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="4" y1="4" x2="16" y2="16"/><line x1="16" y1="4" x2="4" y2="16"/></svg>Delete</button>
+      </div>
+    </div>
+  </div>
+</div><!-- /views-wrapper -->
+
+<!-- NAV - inside #app as flex child, anchored to bottom naturally -->
+<div id="nav">
+  <button class="nb active" id="nav-today" onclick="showView('today')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><line x1="12" y1="3" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21"/><line x1="3" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21" y2="12"/><line x1="5.6" y1="5.6" x2="7" y2="7"/><line x1="17" y1="17" x2="18.4" y2="18.4"/><line x1="5.6" y1="18.4" x2="7" y2="17"/><line x1="17" y1="7" x2="18.4" y2="5.6"/></svg>Today
+  </button>
+  <button class="nb" id="nav-garden" onclick="showView('garden')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="22" x2="12" y2="10"/><path d="M12 16C12 16 7 13 6 8a6 6 0 016 4"/><path d="M12 13C12 13 17 10 18 5a6 6 0 01-6 5"/><path d="M9 22Q8 20 6 21"/></svg>Garden
+  </button>
+  <button class="nb" id="nav-search" onclick="showView('search')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><line x1="16" y1="16" x2="21" y2="21"/></svg>Search
+  </button>
+</div>
+
+</div><!-- /app -->
+
+<!-- EDIT MODAL -->
+<div class="mo" id="emod" onclick="modOvClick(event)">
+  <div class="ms">
+    <div class="mh"></div>
+    <div class="mhdr"><span id="m-dlbl"></span><button onclick="closeModal()">×</button></div>
+    <div class="pstrip" style="margin-bottom:12px"><div class="pinner" id="m-pinner">
+      <button class="apb" id="m-apb" onclick="triggerAdd('m-fi')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" style="width:20px;height:20px"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="12" cy="12" r="3"/><path d="M8 5l1.5-2h5L16 5"/></svg>Add photo
+      </button>
+    </div></div>
+    <input type="file" id="m-fi" accept="image/*">
+    <textarea class="mta" id="mta2" placeholder="Write your memory…" style="min-height:clamp(120px,28vw,175px);margin-bottom:10px"></textarea>
+    <button class="btnp" onclick="saveModal()">Save Changes</button>
+  </div>
+</div>
+
+<!-- SETTINGS SHEET -->
+<div class="sheet-ov" id="settings-sheet" onclick="settingsOvClick(event)">
+  <div class="sheet" id="settings-sheet-inner">
+    <div class="sheet-handle-row">
+      <div style="width:36px"></div>
+      <div class="sheet-handle" id="sheet-handle-drag"></div>
+      <button class="sheet-close" onclick="closeSettings()" aria-label="Close settings">×</button>
+    </div>
+    <div class="sheet-title">Settings</div>
+    <div class="settings-group">
+      <div class="settings-group-label">Appearance</div>
+      <div class="settings-row">
+        <div><div class="settings-row-label">Light Mode</div><div class="settings-row-sub" id="night-sub">Off</div></div>
+        <button class="toggle" id="night-toggle" onclick="cycleNightMode()"></button>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-row-label">Font Style</div></div>
+        <div class="font-opts">
+          <button class="font-opt active" id="font-clean" onclick="setFont(0)">Clean</button>
+          <button class="font-opt" id="font-hand" onclick="setFont(1)">Handwriting</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-row-label">Garden Colour</div></div>
+        <div class="pal-row" id="pal-row"></div>
+      </div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-group-label">Your Garden</div>
+      <div class="settings-row" style="cursor:pointer" onclick="openYearReview()">
+        <div><div class="settings-row-label">Year in Review</div><div class="settings-row-sub">Stats & highlights</div></div>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="7,4 13,10 7,16"/></svg>
+      </div>
+      <div class="settings-row" style="cursor:pointer" onclick="openArc()">
+        <div><div class="settings-row-label">Emotional Arc</div><div class="settings-row-sub">Your mood over time</div></div>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="7,4 13,10 7,16"/></svg>
+      </div>
+      <div class="settings-row" style="cursor:pointer" onclick="exportData()">
+        <div><div class="settings-row-label">Export Memories</div><div class="settings-row-sub">Download as JSON</div></div>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 3v10M6 9l4 4 4-4"/><path d="M4 15v2h12v-2"/></svg>
+      </div>
+      <div class="settings-row" style="cursor:pointer" onclick="triggerImport()">
+        <div><div class="settings-row-label">Import Memories</div><div class="settings-row-sub">Restore from JSON backup</div></div>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 17V7M6 11l4-4 4 4"/><path d="M4 15v2h12v-2"/></svg>
+      </div>
+      <div class="settings-row" style="cursor:pointer" onclick="confirmClearAll()">
+        <div><div class="settings-row-label" style="color:#e05a5a">Clear All Entries</div><div class="settings-row-sub">Permanently delete every memory</div></div>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#e05a5a" stroke-width="1.8" stroke-linecap="round"><polyline points="5,5 15,15"/><polyline points="15,5 5,15"/></svg>
+      </div>
+      <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="handleImportFile(event)">
+    </div>
+    <div class="settings-group">
+      <div class="settings-group-label">Milestones</div>
+      <div id="milestones-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- YEAR IN REVIEW SUBVIEW -->
+<div class="subview" id="sv-review">
+  <div class="subview-header"><button class="bbtn" onclick="closeSV('sv-review')">‹</button><div class="subview-h1">Year in Review</div></div>
+  <div class="subview-body" id="review-body"></div>
+</div>
+
+<!-- EMOTIONAL ARC SUBVIEW -->
+<div class="subview" id="sv-arc">
+  <div class="subview-header"><button class="bbtn" onclick="closeSV('sv-arc')">‹</button><div class="subview-h1">Emotional Arc</div></div>
+  <div class="subview-body"><canvas id="arc-canvas" height="200"></canvas><div class="arc-legend" id="arc-legend"></div><div style="font-size:clamp(12px,2.8vw,14px);color:var(--muted);line-height:1.6">Each point represents a week. Dots show the most frequent mood in that window.</div></div>
+</div>
+
+<!-- YEAR WALK SUBVIEW -->
+<div class="subview" id="sv-walk">
+  <div class="subview-header" style="position:absolute;top:0;left:0;right:0;z-index:5;background:transparent;padding-top:calc(var(--st) + 16px)">
+    <button class="bbtn" onclick="closeSV('sv-walk')" style="backdrop-filter:blur(12px)">‹</button>
+    <div style="font-family:'Instrument Serif',serif;font-size:clamp(15px,4vw,20px);font-style:italic;opacity:.7" id="walk-title"></div>
+  </div>
+  <div class="sb" id="walk-body" style="scroll-behavior:smooth"></div>
+  <div class="walk-progress" id="walk-progress"></div>
+</div>
+
+<!-- SHARE SHEET -->
+<div class="sheet-ov" id="share-sheet" onclick="shareOvClick(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="mhdr"><span style="font-family:'Instrument Serif',serif;font-size:clamp(17px,4.5vw,22px)">Share Memory</span><button onclick="closeShareSheet()">×</button></div>
+    <div class="share-preview"><canvas id="share-canvas"></canvas></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btnp" style="flex:1" onclick="downloadShareCard()">Download Image</button>
+      <button class="btng" style="flex:1;justify-content:center" onclick="nativeShare()">Share…</button>
+    </div>
+  </div>
+</div>
+
+<!-- MILESTONE OVERLAY -->
+<div class="milestone-ov" id="milestone-ov" onclick="closeMilestone()">
+  <div class="milestone-plants" id="mil-plants"></div>
+  <div class="milestone-num" id="mil-num"></div>
+  <div class="milestone-label" id="mil-label"></div>
+  <div class="milestone-sub" id="mil-sub"></div>
+  <button class="btng" onclick="closeMilestone()">Continue growing</button>
+</div>
+
+<!-- PLANT REVEAL OVERLAY -->
+<div class="milestone-ov" id="plant-reveal-ov" style="cursor:default">
+  <div id="plant-reveal-svg" style="width:clamp(80px,20vw,120px);height:clamp(80px,20vw,120px);margin:0 auto 20px;animation:popIn .6s cubic-bezier(.34,1.3,.64,1) both;color:#f0eeff;filter:drop-shadow(0 0 18px rgba(200,190,255,.45));"></div>
+  <div id="plant-reveal-name" style="font-family:'Instrument Serif',serif;font-size:clamp(26px,6.5vw,36px);font-weight:400;margin-bottom:10px;color:#f0eeff;letter-spacing:.01em;"></div>
+  <div id="plant-reveal-desc" style="font-size:clamp(13px,3.2vw,15px);color:rgba(240,238,255,.62);font-style:italic;line-height:1.7;max-width:300px;margin:0 auto 32px;"></div>
+  <button class="btnp" style="max-width:220px;background:#f0eeff;color:#1a00cc;font-weight:600;" onclick="closePlantReveal()">See my garden →</button>
+</div>
+
+<!-- CLEAR ALL CONFIRM OVERLAY -->
+<div class="milestone-ov" id="clear-confirm-ov" style="cursor:default">
+  <div style="font-size:3rem;margin-bottom:16px">🌿</div>
+  <div style="font-family:'Instrument Serif',serif;font-size:clamp(22px,5.5vw,28px);color:#f0eeff;margin-bottom:10px">Clear your garden?</div>
+  <div style="font-size:clamp(13px,3.2vw,15px);color:rgba(240,238,255,.58);font-style:italic;line-height:1.7;max-width:280px;margin:0 auto 28px">Every memory, photo, and entry will be permanently removed. This cannot be undone.</div>
+  <div style="display:flex;gap:12px;width:100%;max-width:280px">
+    <button class="btng" style="flex:1;justify-content:center" onclick="document.getElementById('clear-confirm-ov').classList.remove('show')">Keep it</button>
+    <button class="btnp" style="flex:1;background:#e05a5a;color:#fff" onclick="executeClrAll()">Yes, clear all</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+/* ═══════════════════════════════════════════════════════
+   APP ICON
+═══════════════════════════════════════════════════════ */
+(()=>{
+  const C=document.createElement('canvas');C.width=C.height=180;
+  const X=C.getContext('2d');
+  const bg=X.createLinearGradient(0,0,180,180);bg.addColorStop(0,'#1a00ff');bg.addColorStop(1,'#0d00aa');
+  if(X.roundRect)X.roundRect(0,0,180,180,36);else X.rect(0,0,180,180);X.fillStyle=bg;X.fill();
+  const g=X.createRadialGradient(90,70,10,90,70,110);g.addColorStop(0,'rgba(120,80,255,.45)');g.addColorStop(1,'rgba(0,0,0,0)');
+  X.fillStyle=g;X.beginPath();X.arc(90,90,90,0,Math.PI*2);X.fill();
+  X.strokeStyle='rgba(255,255,255,.9)';X.lineWidth=5.5;X.lineCap='round';X.lineJoin='round';
+  X.beginPath();X.moveTo(90,148);X.lineTo(90,78);X.stroke();
+  X.beginPath();X.moveTo(90,100);X.bezierCurveTo(112,90,128,74,122,56);X.bezierCurveTo(108,64,92,82,90,100);X.stroke();
+  X.beginPath();X.moveTo(90,88);X.bezierCurveTo(68,78,52,62,58,44);X.bezierCurveTo(72,52,88,70,90,88);X.stroke();
+  X.beginPath();X.moveTo(90,78);X.quadraticCurveTo(86,62,84,50);X.stroke();
+  X.beginPath();X.moveTo(90,78);X.quadraticCurveTo(96,62,98,50);X.stroke();
+  document.getElementById('ati').href=C.toDataURL('image/png');
+})();
+
+/* ═══════════════════════════════════════════════════════
+   LIQUID BACKGROUND
+═══════════════════════════════════════════════════════ */
+(()=>{
+  const cv=document.getElementById('lc'),cx=cv.getContext('2d');
+  let W,H;const rz=()=>{W=cv.width=innerWidth;H=cv.height=innerHeight;};rz();addEventListener('resize',rz);
+  const blobs=Array.from({length:8},(_,i)=>({
+    x:Math.random(),y:Math.random(),vx:(Math.random()-.5)*.00013,vy:(Math.random()-.5)*.00013,
+    r:.17+Math.random()*.27,ph:Math.random()*Math.PI*2,sp:.0003+Math.random()*.00038,
+    h:[240,250,225,260,232,216,255,244][i],s:75+Math.random()*24,l:36+Math.random()*22,a:.1+Math.random()*.11
+  }));
+  let t=0;
+  (function draw(){
+    cx.clearRect(0,0,W,H);t++;
+    blobs.forEach(b=>{
+      b.x+=b.vx+Math.sin(t*b.sp+b.ph)*.000085;b.y+=b.vy+Math.cos(t*b.sp+b.ph*1.3)*.000075;
+      if(b.x<-.35)b.x=1.35;if(b.x>1.35)b.x=-.35;if(b.y<-.35)b.y=1.35;if(b.y>1.35)b.y=-.35;
+      const sz=b.r*Math.max(W,H),ry=sz*(.72+.28*Math.sin(t*.0006+b.ph));
+      const g=cx.createRadialGradient(b.x*W,b.y*H,0,b.x*W,b.y*H,sz);
+      g.addColorStop(0,`hsla(${b.h},${b.s}%,${b.l}%,${b.a})`);g.addColorStop(1,`hsla(${b.h},${b.s}%,${b.l}%,0)`);
+      cx.save();cx.translate(b.x*W,b.y*H);cx.rotate(t*b.sp*.4+b.ph);cx.scale(1,ry/sz);cx.translate(-b.x*W,-b.y*H);
+      cx.beginPath();cx.arc(b.x*W,b.y*H,sz,0,Math.PI*2);cx.fillStyle=g;cx.fill();cx.restore();
+    });requestAnimationFrame(draw);
+  })();
+  // re-color blobs on palette change
+  window.recolorBlobs=()=>{
+    const s=getComputedStyle(document.body);
+    const raw=s.getPropertyValue('--pb').trim();
+  };
+})();
+
+/* ═══════════════════════════════════════════════════════
+   PLANT DOODLES (55 plants)
+═══════════════════════════════════════════════════════ */
+const D=[
+  {n:'Wildflower',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="20" y1="38" x2="20" y2="20"/><ellipse cx="20" cy="13" rx="3" ry="5.5"/><ellipse cx="20" cy="13" rx="3" ry="5.5" transform="rotate(60 20 13)"/><ellipse cx="20" cy="13" rx="3" ry="5.5" transform="rotate(120 20 13)"/><circle cx="20" cy="13" r="3.5" fill="currentColor" opacity=".3"/><path d="M15 30Q17 27 20 29"/></svg>`},
+  {n:'Leaf',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M20 37C20 37 5 28 7 13 9 3 20 3 20 3S31 3 33 13C35 28 20 37 20 37Z"/><line x1="20" y1="37" x2="20" y2="9"/><path d="M20 22L13 16M20 27L27 21"/></svg>`},
+  {n:'Oak Tree',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="20" y1="38" x2="20" y2="24"/><ellipse cx="20" cy="17" rx="11" ry="10"/><path d="M13 22Q10 18 12 14M27 22Q30 18 28 14"/></svg>`},
+  {n:'Mushroom',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M14 22C14 38 26 38 26 22"/><path d="M12 22C12 11 28 11 28 22Z"/><circle cx="17" cy="17" r="2" fill="currentColor" opacity=".4"/><circle cx="23" cy="15" r="1.5" fill="currentColor" opacity=".35"/></svg>`},
+  {n:'Cactus',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="8"/><path d="M20 17C20 17 13 17 13 10V6"/><path d="M20 23C20 23 27 23 27 16V12"/><circle cx="20" cy="8" r="2"/></svg>`},
+  {n:'Sunflower',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="22"/><circle cx="20" cy="16" r="5.5"/><circle cx="20" cy="16" r="2.5" fill="currentColor" opacity=".45"/><line x1="20" y1="8" x2="20" y2="10"/><line x1="28.6" y1="10.6" x2="27.1" y2="12.1"/><line x1="29" y1="16" x2="27" y2="16"/><line x1="28.6" y1="21.4" x2="27.1" y2="19.9"/><line x1="20" y1="24" x2="20" y2="22"/><line x1="11.4" y1="21.4" x2="12.9" y2="19.9"/><line x1="11" y1="16" x2="13" y2="16"/><line x1="11.4" y1="10.6" x2="12.9" y2="12.1"/></svg>`},
+  {n:'Fern',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="7"/><path d="M20 30C16 28 10 23 9 17M20 30C24 28 30 23 31 17M20 23C17 21 13 18 12 13M20 23C23 21 27 18 28 13M20 16C18 14 16 12 16 9M20 16C22 14 24 12 24 9"/></svg>`},
+  {n:'Dandelion',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="20"/><circle cx="20" cy="18" r="2" fill="currentColor" opacity=".35"/><line x1="20" y1="16" x2="20" y2="9"/><line x1="20" y1="16" x2="13" y2="12"/><line x1="20" y1="16" x2="27" y2="12"/><line x1="20" y1="16" x2="12" y2="18"/><line x1="20" y1="16" x2="28" y2="18"/><line x1="20" y1="16" x2="14" y2="22.5"/><line x1="20" y1="16" x2="26" y2="22.5"/><circle cx="20" cy="8.5" r="1.2" fill="currentColor"/><circle cx="13" cy="11.5" r="1.2" fill="currentColor"/><circle cx="27" cy="11.5" r="1.2" fill="currentColor"/></svg>`},
+  {n:'Tulip',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="24"/><path d="M15 25C15 25 13 16 17 12 19 8.5 21 8.5 23 12 27 16 25 25 25 25Z"/><path d="M13 21C9 19 8 12 13 10M27 21C31 19 32 12 27 10M20 27Q15 29 13 33"/></svg>`},
+  {n:'Acorn',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><ellipse cx="20" cy="27" rx="8.5" ry="10"/><path d="M11.5 23Q20 18 28.5 23" stroke-width="2.8"/><line x1="20" y1="18" x2="20" y2="10"/><path d="M17 10Q20 8 23 10"/></svg>`},
+  {n:'Clover',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="24"/><circle cx="20" cy="17.5" r="5.5"/><circle cx="13.5" cy="22" r="5.5"/><circle cx="26.5" cy="22" r="5.5"/><path d="M20 30Q17 29 13 31"/></svg>`},
+  {n:'Rose',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="25"/><path d="M15 27C15 27 13 18 17 13 19 9 21 9 23 13 27 18 25 27 25 27Z"/><path d="M13 22C9 20 8 12 13 10M27 22C31 20 32 12 27 10M18 18C19 16 21 16 22 18"/></svg>`},
+  {n:'Lavender',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="17"/><path d="M20 21L16 15M20 23L16 17M20 25L16 19M20 27L16 21M20 21L24 15M20 23L24 17M20 25L24 19M20 27L24 21"/><circle cx="16" cy="14" r="1.5" fill="currentColor"/><circle cx="24" cy="14" r="1.5" fill="currentColor"/><circle cx="20" cy="16" r="1.5" fill="currentColor"/></svg>`},
+  {n:'Daisy',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="23"/><circle cx="20" cy="16" r="4.5"/><ellipse cx="20" cy="8.5" rx="2.2" ry="4" transform="rotate(0 20 16)"/><ellipse cx="20" cy="8.5" rx="2.2" ry="4" transform="rotate(45 20 16)"/><ellipse cx="20" cy="8.5" rx="2.2" ry="4" transform="rotate(90 20 16)"/><ellipse cx="20" cy="8.5" rx="2.2" ry="4" transform="rotate(135 20 16)"/><ellipse cx="20" cy="8.5" rx="2.2" ry="4" transform="rotate(180 20 16)"/><ellipse cx="20" cy="8.5" rx="2.2" ry="4" transform="rotate(225 20 16)"/><ellipse cx="20" cy="8.5" rx="2.2" ry="4" transform="rotate(270 20 16)"/><ellipse cx="20" cy="8.5" rx="2.2" ry="4" transform="rotate(315 20 16)"/></svg>`},
+  {n:'Pine Tree',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="20" y1="38" x2="20" y2="28"/><polygon points="20,5 9,21 31,21"/><polygon points="20,11 8,27 32,27"/><polygon points="20,17 7,31 33,31"/></svg>`},
+  {n:'Succulent',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><ellipse cx="20" cy="31" rx="7" ry="3"/><path d="M13 31Q9 24 13 19Q17 17 20 20M27 31Q31 24 27 19Q23 17 20 20M13 27Q7 22 9 15Q13 11 17 16M27 27Q33 22 31 15Q27 11 23 16"/><ellipse cx="20" cy="20" rx="4.5" ry="6"/></svg>`},
+  {n:'Bamboo',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="17" y1="38" x2="17" y2="5"/><line x1="24" y1="38" x2="24" y2="9"/><line x1="12" y1="29" x2="22" y2="29" opacity=".6"/><line x1="14" y1="21" x2="22" y2="21" opacity=".6"/><line x1="12" y1="13" x2="22" y2="13" opacity=".6"/><line x1="19" y1="33" x2="29" y2="33" opacity=".6"/><path d="M17 29Q13 27 11 23M17 21Q21 19 23 15M24 33Q28 31 30 27"/></svg>`},
+  {n:'Morning Glory',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M9 38Q13 28 20 24Q27 20 33 8"/><path d="M20 24C20 24 15 17 20 13 25 9 29 13 27 20 25 25 20 24 20 24Z"/><circle cx="21" cy="18" r="1.5" fill="currentColor" opacity=".5"/></svg>`},
+  {n:'Cattail',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="5"/><rect x="16.5" y="14" width="7" height="14" rx="3.5" fill="currentColor" opacity=".5"/><path d="M14 21Q9 18 8 23M26 21Q31 18 32 23"/></svg>`},
+  {n:'Marigold',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="25"/><circle cx="20" cy="18" r="7.5"/><circle cx="20" cy="18" r="3.5" fill="currentColor" opacity=".3"/><line x1="20" y1="9" x2="20" y2="7"/><line x1="28" y1="11.7" x2="29.1" y2="10.1"/><line x1="12" y1="11.7" x2="10.9" y2="10.1"/><line x1="29.5" y1="18" x2="31.5" y2="18"/><line x1="10.5" y1="18" x2="8.5" y2="18"/></svg>`},
+  {n:'Water Lily',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M20 30Q5 30 5 24Q5 20 20 20Q35 20 35 24Q35 30 20 30Z" opacity=".45"/><path d="M20 20L18 11Q20 9 22 11ZM20 20L12 13Q10 11 14 12ZM20 20L28 13Q30 11 26 12Z"/><circle cx="20" cy="18" r="2.5" fill="currentColor" opacity=".45"/></svg>`},
+  {n:'Sprout',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="19"/><path d="M20 28C20 28 11 26 10 17Q14 10 20 15M20 23C20 23 29 19 31 11Q27 4 20 9"/></svg>`},
+  {n:'Cosmos',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="22"/><circle cx="20" cy="17" r="3"/><line x1="20" y1="14" x2="20" y2="6"/><path d="M20 14Q24.5 9 26.5 7.5M20 14Q15.5 9 13.5 7.5M23 17Q29.5 14 31 12M17 17Q10.5 14 9 12M22 20.5Q26.5 25.5 28.5 27M18 20.5Q13.5 25.5 11.5 27"/></svg>`},
+  {n:'Hanging Pothos',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M14 7Q17 11 20 15Q23 11 26 7"/><path d="M20 15Q17 20 13 22Q9 24 7 22M20 15Q23 20 27 22Q31 24 33 22M20 15Q18 22 15 29Q13 33 11 35M20 15Q22 22 25 29Q27 33 29 35M20 15L20 33"/><circle cx="11" cy="36" r="2.2"/><circle cx="29" cy="36" r="2.2"/><circle cx="20" cy="34" r="2.2"/></svg>`},
+  {n:'Lotus',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M20 28C20 28 13 22 13 16 13 11 17 9 20 12 23 9 27 11 27 16 27 22 20 28Z"/><path d="M13 22C13 22 7 18 7 13 7 9 11 8 14 11M27 22C27 22 33 18 33 13 33 9 29 8 26 11M20 28Q20 33 20 36"/></svg>`},
+  {n:'Poppy',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="23"/><path d="M20 23C20 23 12 19 10 13 8 8 14 5 18 9M20 23C20 23 28 19 30 13 32 8 26 5 22 9M18 9C18 9 16 5 20 3 24 5 22 9 22 9"/><circle cx="20" cy="15" r="4.5" fill="currentColor" opacity=".2"/><circle cx="20" cy="14" r="2" fill="currentColor" opacity=".5"/></svg>`},
+  {n:'Cherry Blossom',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 30Q12 22 18 18Q24 14 32 10"/><circle cx="16" cy="13" r="3.5"/><circle cx="24" cy="9.5" r="3.5"/><line x1="14" y1="10.5" x2="12" y2="8"/><line x1="16" y1="10" x2="16" y2="7.5"/><line x1="18" y1="11" x2="20" y2="9"/><line x1="22" y1="7" x2="20" y2="5"/><line x1="24" y1="6" x2="24" y2="3.5"/><line x1="26" y1="7" x2="28" y2="5"/></svg>`},
+  {n:'Wheat',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="5"/><path d="M20 33Q17 31 15 28Q17 27 20 29M20 27Q17 25 15 22Q17 21 20 23M20 21Q17 19 15 16Q17 15 20 17M20 33Q23 31 25 28Q23 27 20 29M20 27Q23 25 25 22Q23 21 20 23M20 21Q23 19 25 16Q23 15 20 17M18 15Q16 12 15 9Q17 9 20 12M22 15Q24 12 25 9Q23 9 20 12"/></svg>`},
+  {n:'Iris',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="22"/><path d="M20 22C20 22 14 18 13 12 12 7 17 5 20 10M20 22C20 22 26 18 27 12 28 7 23 5 20 10M20 22C20 22 16 14 20 8 24 14 20 22 20 22Z"/></svg>`},
+  {n:'Aloe Vera',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><ellipse cx="20" cy="33" rx="8" ry="4"/><path d="M20 33Q20 24 16 14Q13 8 15 4Q18 6 20 14Q22 6 25 4Q27 8 24 14Q20 24 20 33"/><path d="M14 26Q9 22 9 16Q12 12 16 18M26 26Q31 22 31 16Q28 12 24 18"/></svg>`},
+  {n:'Monstera',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M20 36C20 36 4 30 5 16 6 6 13 4 20 8 27 4 34 6 35 16 36 30 20 36 20 36Z"/><path d="M20 8Q20 22 20 36"/><path d="M12 14Q10 18 9 22" stroke-width="1.2"/><path d="M28 14Q30 18 31 22" stroke-width="1.2"/><path d="M9 18Q5 23 6 28" opacity=".5"/><path d="M31 18Q35 23 34 28" opacity=".5"/></svg>`},
+  {n:'Bonsai',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="12" y="34" width="16" height="5" rx="2.5"/><line x1="20" y1="34" x2="20" y2="24"/><path d="M20 28Q14 28 14 22 14 16 20 16Q26 16 26 22 26 28 20 28ZM14 22Q10 22 9 17 9 12 14 14M26 22Q30 22 31 17 31 12 26 14M16 16Q14 11 17 7M24 16Q26 11 23 7"/></svg>`},
+  {n:'Maple Leaf',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="20" y1="38" x2="20" y2="28"/><path d="M20 28Q18 24 14 24Q16 20 14 17Q17 18 18 16Q19 13 20 10Q21 13 22 16Q23 18 26 17Q24 20 26 24Q22 24 20 28ZM8 22Q12 20 14 17M32 22Q28 20 26 17"/></svg>`},
+  {n:'Ginkgo',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="24"/><path d="M20 24C20 24 8 20 8 13Q8 6 20 7Q32 6 32 13Q32 20 20 24Z"/><path d="M20 7L20 24" opacity=".4"/><path d="M14 24L11 22" opacity=".4"/><path d="M26 24L29 22" opacity=".4"/></svg>`},
+  {n:'Foxglove',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="5"/><path d="M20 12Q23 10 25 13Q24 17 20 16Q16 17 15 13Q17 10 20 12ZM20 18Q23 16 25 19Q24 23 20 22Q16 23 15 19Q17 16 20 18ZM20 24Q23 22 25 25Q24 29 20 28Q16 29 15 25Q17 22 20 24ZM20 30Q22 28 24 31Q23 34 20 33Q17 34 16 31Q18 28 20 30Z"/></svg>`},
+  {n:'Daffodil',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="24"/><circle cx="20" cy="17" r="5.5"/><ellipse cx="20" cy="17" rx="3" ry="4.5" fill="currentColor" opacity=".25"/><ellipse cx="20" cy="9.5" rx="2.5" ry="4.5" transform="rotate(0 20 17)"/><ellipse cx="20" cy="9.5" rx="2.5" ry="4.5" transform="rotate(60 20 17)"/><ellipse cx="20" cy="9.5" rx="2.5" ry="4.5" transform="rotate(120 20 17)"/><ellipse cx="20" cy="9.5" rx="2.5" ry="4.5" transform="rotate(180 20 17)"/><ellipse cx="20" cy="9.5" rx="2.5" ry="4.5" transform="rotate(240 20 17)"/><ellipse cx="20" cy="9.5" rx="2.5" ry="4.5" transform="rotate(300 20 17)"/></svg>`},
+  {n:'Orchid',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="22"/><path d="M20 22C20 22 14 18 12 12 10 7 15 5 18 9M20 22C20 22 26 18 28 12 30 7 25 5 22 9"/><ellipse cx="20" cy="16" rx="3.5" ry="5.5" opacity=".6"/><circle cx="20" cy="16" r="2" fill="currentColor" opacity=".45"/></svg>`},
+  {n:'Pansy',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="26"/><ellipse cx="20" cy="19" rx="5" ry="8"/><ellipse cx="13" cy="16" rx="4.5" ry="7" transform="rotate(50 13 16)"/><ellipse cx="27" cy="16" rx="4.5" ry="7" transform="rotate(-50 27 16)"/><ellipse cx="12" cy="22" rx="4" ry="6.5" transform="rotate(120 12 22)"/><ellipse cx="28" cy="22" rx="4" ry="6.5" transform="rotate(-120 28 22)"/><circle cx="20" cy="18" r="2.5" fill="currentColor" opacity=".45"/></svg>`},
+  {n:'Wisteria',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 6Q14 8 20 7Q26 6 32 8"/><path d="M12 8Q11 14 13 18Q14 22 12 28M20 7Q19 13 21 17Q22 21 20 28M28 8Q29 14 27 18Q26 22 28 28"/><path d="M13 18Q11 22 12 28Q13 30 11 34M21 17Q19 21 20 28Q21 30 19 34M27 18Q29 22 28 28Q29 30 31 34"/><circle cx="11" cy="35" r="2.5" fill="currentColor" opacity=".4"/><circle cx="19" cy="35" r="2.5" fill="currentColor" opacity=".4"/><circle cx="31" cy="35" r="2.5" fill="currentColor" opacity=".4"/></svg>`},
+  {n:'Chamomile',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="22"/><circle cx="20" cy="15.5" r="4.5"/><circle cx="20" cy="15.5" r="2" fill="currentColor" opacity=".45"/><ellipse cx="20" cy="8" rx="2" ry="4" transform="rotate(0 20 15.5)"/><ellipse cx="20" cy="8" rx="2" ry="4" transform="rotate(36 20 15.5)"/><ellipse cx="20" cy="8" rx="2" ry="4" transform="rotate(72 20 15.5)"/><ellipse cx="20" cy="8" rx="2" ry="4" transform="rotate(108 20 15.5)"/><ellipse cx="20" cy="8" rx="2" ry="4" transform="rotate(144 20 15.5)"/><ellipse cx="20" cy="8" rx="2" ry="4" transform="rotate(180 20 15.5)"/><ellipse cx="20" cy="8" rx="2" ry="4" transform="rotate(216 20 15.5)"/><ellipse cx="20" cy="8" rx="2" ry="4" transform="rotate(252 20 15.5)"/><ellipse cx="20" cy="8" rx="2" ry="4" transform="rotate(288 20 15.5)"/><ellipse cx="20" cy="8" rx="2" ry="4" transform="rotate(324 20 15.5)"/></svg>`},
+  {n:'Mint Sprig',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="8"/><ellipse cx="14.5" cy="16" rx="5" ry="3.5" transform="rotate(-25 14.5 16)"/><ellipse cx="25.5" cy="20" rx="5" ry="3.5" transform="rotate(25 25.5 20)"/><ellipse cx="14" cy="26" rx="5" ry="3.5" transform="rotate(-20 14 26)"/><ellipse cx="25.5" cy="30" rx="5" ry="3.5" transform="rotate(20 25.5 30)"/><path d="M20 13Q18 10 17 7M20 13Q22 10 23 7"/></svg>`},
+  {n:'Peony',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="25"/><path d="M15 25C15 25 13 15 17 10 19 7 21 7 23 10 27 15 25 25 25 25ZM13 20C9 18 8 10 13 8M27 20C31 18 32 10 27 8M15 14C15 14 17 11 20 11 23 11 25 14 25 14M14 18C14 18 16 15 20 15 24 15 26 18 26 18"/></svg>`},
+  {n:'Weeping Willow',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="8"/><path d="M20 12Q14 10 10 7M20 12Q26 10 30 7M14 12Q10 18 8 26Q9 30 11 28Q12 22 15 18M26 12Q30 18 32 26Q31 30 29 28Q28 22 25 18M20 14Q16 20 14 30Q15 34 17 32Q18 24 20 18M20 14Q24 20 26 30Q25 34 23 32Q22 24 20 18M20 16Q18 22 17 32Q18 36 20 34Q22 36 23 32Q22 22 20 16"/></svg>`},
+  {n:'Palm Tree',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M18 38Q19 28 22 18Q24 10 20 6M20 6Q14 4 10 7Q12 12 18 12M20 6Q26 4 30 7Q28 12 22 12M20 6Q16 2 11 4Q12 9 18 12M20 6Q24 2 29 4Q28 9 22 12"/></svg>`},
+  {n:'Holly',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 22Q7 16 10 11Q14 7 17 11Q14 7 19 5Q22 9 18 14Q23 10 26 14Q22 17 24 22Q20 19 20 24Q18 19 16 22Q18 17 14 16Q10 20 10 22Z"/><circle cx="23" cy="27" r="3" fill="currentColor" opacity=".5"/><circle cx="28" cy="24" r="3" fill="currentColor" opacity=".5"/><circle cx="26" cy="30" r="3" fill="currentColor" opacity=".5"/></svg>`},
+  {n:'Carnation',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="23"/><path d="M20 23C20 23 15 19 14 14 14 10 17 9 20 12 23 9 26 10 26 14 25 19 20 23 20 23ZM14 17Q10 16 9 12 9 8 13 9M26 17Q30 16 31 12 31 8 27 9M16 12Q15 9 17 7M24 12Q25 9 23 7M20 12Q20 9 20 7"/></svg>`},
+  {n:'Bird of Paradise',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="18"/><path d="M20 18Q14 14 10 8Q14 4 18 10M20 18Q26 14 30 8Q26 4 22 10M18 10C18 10 20 6 22 10M20 18Q16 16 20 10Q24 16 20 18Z"/></svg>`},
+  {n:'Sage',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="10"/><ellipse cx="13" cy="16" rx="5" ry="3.5" transform="rotate(-30 13 16)"/><ellipse cx="27" cy="16" rx="5" ry="3.5" transform="rotate(30 27 16)"/><ellipse cx="12" cy="24" rx="5" ry="3.5" transform="rotate(-25 12 24)"/><ellipse cx="28" cy="24" rx="5" ry="3.5" transform="rotate(25 28 24)"/><ellipse cx="12.5" cy="32" rx="4.5" ry="3" transform="rotate(-20 12.5 32)"/><ellipse cx="27.5" cy="32" rx="4.5" ry="3" transform="rotate(20 27.5 32)"/><path d="M20 10Q18 7 17 4M20 10Q22 7 23 4"/></svg>`},
+  {n:'Hyacinth',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="16"/><circle cx="20" cy="13" r="2.5"/><circle cx="15" cy="16" r="2.5"/><circle cx="25" cy="16" r="2.5"/><circle cx="13" cy="21" r="2.5"/><circle cx="27" cy="21" r="2.5"/><circle cx="14" cy="26" r="2.5"/><circle cx="26" cy="26" r="2.5"/><circle cx="17" cy="30" r="2.5"/><circle cx="23" cy="30" r="2.5"/><circle cx="20" cy="32" r="2.5"/></svg>`},
+  {n:'Venus Fly Trap',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="26"/><path d="M12 26Q20 22 28 26M12 26Q12 17 20 15Q28 17 28 26"/><line x1="14" y1="22" x2="14" y2="18"/><line x1="17" y1="21" x2="17" y2="17"/><line x1="20" y1="21" x2="20" y2="15"/><line x1="23" y1="21" x2="23" y2="17"/><line x1="26" y1="22" x2="26" y2="18"/></svg>`},
+  {n:'Vine',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 38Q10 30 14 24Q18 18 20 10Q22 18 26 24Q30 30 32 38" opacity=".4"/><path d="M10 32Q8 28 10 24Q13 20 16 22Q12 26 10 32M16 22Q14 18 17 14Q20 11 22 14Q19 17 16 22M22 14Q22 10 25 7Q28 5 29 9Q26 11 22 14M30 34Q32 30 30 26Q27 22 24 24Q28 28 30 34"/></svg>`},
+  {n:'Bleeding Heart',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="22"/><path d="M20 22Q14 16 12 10Q15 5 20 9Q25 5 28 10Q26 16 20 22Z" fill="currentColor" opacity=".18"/><line x1="20" y1="22" x2="20" y2="28"/><path d="M15 11Q20 8 25 11" opacity=".5"/></svg>`},
+  {n:'Passionflower',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="22"/><circle cx="20" cy="15" r="8"/><circle cx="20" cy="15" r="4" fill="currentColor" opacity=".18"/><circle cx="20" cy="15" r="1.5" fill="currentColor" opacity=".6"/><line x1="20" y1="7" x2="20" y2="4"/><line x1="27.7" y1="9.3" x2="29.8" y2="7.2"/><line x1="28" y1="15" x2="31" y2="15"/><line x1="27.7" y1="20.7" x2="29.8" y2="22.8"/><line x1="20" y1="23" x2="20" y2="26"/><line x1="12.3" y1="20.7" x2="10.2" y2="22.8"/><line x1="12" y1="15" x2="9" y2="15"/><line x1="12.3" y1="9.3" x2="10.2" y2="7.2"/><path d="M17 10Q20 7 23 10M24 13Q27 16 24 19M16 19Q13 16 16 13" opacity=".45"/></svg>`},
+  {n:'Protea',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="24"/><ellipse cx="20" cy="16" rx="9" ry="12"/><ellipse cx="20" cy="17" rx="5" ry="7" fill="currentColor" opacity=".2"/><line x1="11" y1="20" x2="8" y2="23"/><line x1="29" y1="20" x2="32" y2="23"/><line x1="13" y1="25" x2="11" y2="28"/><line x1="27" y1="25" x2="29" y2="28"/></svg>`},
+  {n:'Anemone',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="24"/><circle cx="20" cy="16" r="6"/><circle cx="20" cy="16" r="3.5" fill="currentColor" opacity=".35"/><ellipse cx="20" cy="8" rx="3" ry="5" transform="rotate(0 20 16)"/><ellipse cx="20" cy="8" rx="3" ry="5" transform="rotate(60 20 16)"/><ellipse cx="20" cy="8" rx="3" ry="5" transform="rotate(120 20 16)"/><ellipse cx="20" cy="8" rx="3" ry="5" transform="rotate(180 20 16)"/><ellipse cx="20" cy="8" rx="3" ry="5" transform="rotate(240 20 16)"/><ellipse cx="20" cy="8" rx="3" ry="5" transform="rotate(300 20 16)"/></svg>`},
+  {n:'Forget-Me-Not',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M10 34Q14 26 20 22Q26 18 30 10"/><circle cx="14" cy="20" r="3.5"/><circle cx="22" cy="14" r="3.5"/><circle cx="14" cy="20" r="1.2" fill="currentColor" opacity=".55"/><circle cx="22" cy="14" r="1.2" fill="currentColor" opacity=".55"/><circle cx="28" cy="12" r="3"/><circle cx="28" cy="12" r="1" fill="currentColor" opacity=".5"/></svg>`},
+  {n:'Snapdragon',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="8"/><path d="M20 14Q23 12 25 14Q24 18 20 17Q16 18 15 14Q17 12 20 14Z"/><path d="M20 20Q23 18 25 20Q24 24 20 23Q16 24 15 20Q17 18 20 20Z"/><path d="M20 26Q22 24 24 26Q23 29 20 28Q17 29 16 26Q18 24 20 26Z"/><path d="M20 32Q22 30 23 32Q22 35 20 34Q18 35 17 32Q18 30 20 32Z"/></svg>`},
+  {n:'Lisianthus',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="24"/><path d="M20 24Q13 22 11 15Q14 7 20 11Q26 7 29 15Q27 22 20 24Z" fill="currentColor" opacity=".15"/><path d="M15 22Q11 20 10 14" opacity=".5"/><path d="M25 22Q29 20 30 14" opacity=".5"/><path d="M20 11Q18 8 17 5M20 11Q22 8 23 5" opacity=".4"/></svg>`},
+  {n:'Columbine',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="26"/><path d="M20 26Q16 20 14 14Q17 9 20 13Q23 9 26 14Q24 20 20 26Z"/><path d="M14 14Q10 10 9 5M26 14Q30 10 31 5M20 13Q20 9 20 4" opacity=".45"/><circle cx="20" cy="16" r="2.5" fill="currentColor" opacity=".35"/></svg>`},
+  {n:'Hellebore',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="26"/><path d="M20 26Q14 24 12 17Q15 10 20 14Q25 10 28 17Q26 24 20 26Z" fill="currentColor" opacity=".14"/><circle cx="20" cy="18" r="3"/><circle cx="20" cy="18" r="1.2" fill="currentColor" opacity=".5"/><path d="M16 14Q12 12 11 8M24 14Q28 12 29 8" opacity=".4"/></svg>`},
+  {n:'Periwinkle',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 34Q12 26 18 22Q24 18 30 12"/><circle cx="16" cy="20" r="4"/><circle cx="16" cy="20" r="1.5" fill="currentColor" opacity=".45"/><ellipse cx="16" cy="15" rx="2" ry="3.5" transform="rotate(0 16 20)"/><ellipse cx="16" cy="15" rx="2" ry="3.5" transform="rotate(72 16 20)"/><ellipse cx="16" cy="15" rx="2" ry="3.5" transform="rotate(144 16 20)"/><ellipse cx="16" cy="15" rx="2" ry="3.5" transform="rotate(216 16 20)"/><ellipse cx="16" cy="15" rx="2" ry="3.5" transform="rotate(288 16 20)"/></svg>`},
+  {n:'Borage',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="24"/><circle cx="20" cy="16" r="5"/><circle cx="20" cy="16" r="2" fill="currentColor" opacity=".5"/><line x1="20" y1="11" x2="20" y2="8"/><line x1="24.3" y1="13.5" x2="26.6" y2="11.8"/><line x1="24.3" y1="18.5" x2="26.6" y2="20.2"/><line x1="20" y1="21" x2="20" y2="24"/><line x1="15.7" y1="18.5" x2="13.4" y2="20.2"/><line x1="15.7" y1="13.5" x2="13.4" y2="11.8"/></svg>`},
+  {n:'Sweet Pea',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 38Q13 30 19 24Q25 18 31 10"/><path d="M19 24Q15 19 17 13Q21 10 22 16Q25 11 29 12Q28 18 22 16" fill="currentColor" opacity=".14"/><path d="M14 32Q12 28 13 24" opacity=".4"/><path d="M19 24Q18 28 16 32" opacity=".35"/></svg>`},
+  {n:'Edelweiss',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="24"/><circle cx="20" cy="17" r="3" fill="currentColor" opacity=".4"/><ellipse cx="20" cy="10.5" rx="3" ry="4.5" transform="rotate(0 20 17)"/><ellipse cx="20" cy="10.5" rx="3" ry="4.5" transform="rotate(60 20 17)"/><ellipse cx="20" cy="10.5" rx="3" ry="4.5" transform="rotate(120 20 17)"/><ellipse cx="20" cy="10.5" rx="3" ry="4.5" transform="rotate(180 20 17)"/><ellipse cx="20" cy="10.5" rx="3" ry="4.5" transform="rotate(240 20 17)"/><ellipse cx="20" cy="10.5" rx="3" ry="4.5" transform="rotate(300 20 17)"/></svg>`},
+  {n:'Buttercup',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="24"/><circle cx="20" cy="17" r="3.5" fill="currentColor" opacity=".4"/><ellipse cx="20" cy="10" rx="2.5" ry="5" transform="rotate(0 20 17)"/><ellipse cx="20" cy="10" rx="2.5" ry="5" transform="rotate(72 20 17)"/><ellipse cx="20" cy="10" rx="2.5" ry="5" transform="rotate(144 20 17)"/><ellipse cx="20" cy="10" rx="2.5" ry="5" transform="rotate(216 20 17)"/><ellipse cx="20" cy="10" rx="2.5" ry="5" transform="rotate(288 20 17)"/></svg>`},
+  {n:'Lobelia',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="12"/><path d="M20 16Q17 14 16 11Q18 9 20 12M20 16Q23 14 24 11Q22 9 20 12M20 20Q17 18 15 16Q17 14 20 17M20 20Q23 18 25 16Q23 14 20 17M20 24Q17 22 14 21Q16 19 20 22M20 24Q23 22 26 21Q24 19 20 22M20 28Q17 27 13 26Q15 24 20 26M20 28Q23 27 27 26Q25 24 20 26"/></svg>`},
+  {n:'Agapanthus',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="18"/><circle cx="20" cy="13" r="2" fill="currentColor" opacity=".3"/><line x1="20" y1="11" x2="16" y2="5"/><line x1="20" y1="11" x2="24" y2="5"/><line x1="20" y1="10" x2="12" y2="8"/><line x1="20" y1="10" x2="28" y2="8"/><line x1="20" y1="12" x2="13" y2="16"/><line x1="20" y1="12" x2="27" y2="16"/><circle cx="16" cy="5" r="1.5" fill="currentColor" opacity=".5"/><circle cx="24" cy="5" r="1.5" fill="currentColor" opacity=".5"/><circle cx="12" cy="8" r="1.5" fill="currentColor" opacity=".4"/><circle cx="28" cy="8" r="1.5" fill="currentColor" opacity=".4"/><circle cx="13" cy="17" r="1.5" fill="currentColor" opacity=".4"/><circle cx="27" cy="17" r="1.5" fill="currentColor" opacity=".4"/></svg>`},
+  {n:'Statice',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="20"/><path d="M20 20Q16 16 12 12Q15 9 18 12M20 20Q24 16 28 12Q25 9 22 12M20 20Q16 17 10 16Q11 12 15 14M20 20Q24 17 30 16Q29 12 25 14M20 20Q19 15 18 10Q21 8 21 12M20 20Q21 15 22 10Q19 8 19 12"/><circle cx="12" cy="12" r="1.5" fill="currentColor" opacity=".5"/><circle cx="28" cy="12" r="1.5" fill="currentColor" opacity=".5"/><circle cx="10" cy="16" r="1.5" fill="currentColor" opacity=".45"/><circle cx="30" cy="16" r="1.5" fill="currentColor" opacity=".45"/></svg>`},
+  {n:'Zinnia',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="24"/><circle cx="20" cy="16" r="4" fill="currentColor" opacity=".3"/><ellipse cx="20" cy="8.5" rx="2.5" ry="4.5" transform="rotate(0 20 16)"/><ellipse cx="20" cy="8.5" rx="2.5" ry="4.5" transform="rotate(40 20 16)"/><ellipse cx="20" cy="8.5" rx="2.5" ry="4.5" transform="rotate(80 20 16)"/><ellipse cx="20" cy="8.5" rx="2.5" ry="4.5" transform="rotate(120 20 16)"/><ellipse cx="20" cy="8.5" rx="2.5" ry="4.5" transform="rotate(160 20 16)"/><ellipse cx="20" cy="8.5" rx="2.5" ry="4.5" transform="rotate(200 20 16)"/><ellipse cx="20" cy="8.5" rx="2.5" ry="4.5" transform="rotate(240 20 16)"/><ellipse cx="20" cy="8.5" rx="2.5" ry="4.5" transform="rotate(280 20 16)"/><ellipse cx="20" cy="8.5" rx="2.5" ry="4.5" transform="rotate(320 20 16)"/></svg>`},
+  {n:'Cosmos (Pink)',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="23"/><circle cx="20" cy="16" r="3" fill="currentColor" opacity=".4"/><ellipse cx="20" cy="9" rx="2.8" ry="5.5" transform="rotate(0 20 16)"/><ellipse cx="20" cy="9" rx="2.8" ry="5.5" transform="rotate(45 20 16)"/><ellipse cx="20" cy="9" rx="2.8" ry="5.5" transform="rotate(90 20 16)"/><ellipse cx="20" cy="9" rx="2.8" ry="5.5" transform="rotate(135 20 16)"/><ellipse cx="20" cy="9" rx="2.8" ry="5.5" transform="rotate(180 20 16)"/><ellipse cx="20" cy="9" rx="2.8" ry="5.5" transform="rotate(225 20 16)"/><ellipse cx="20" cy="9" rx="2.8" ry="5.5" transform="rotate(270 20 16)"/><ellipse cx="20" cy="9" rx="2.8" ry="5.5" transform="rotate(315 20 16)"/></svg>`},
+  {n:'Nigella',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="22"/><circle cx="20" cy="15" r="4"/><circle cx="20" cy="15" r="1.8" fill="currentColor" opacity=".4"/><ellipse cx="20" cy="8.5" rx="2" ry="4" transform="rotate(0 20 15)"/><ellipse cx="20" cy="8.5" rx="2" ry="4" transform="rotate(72 20 15)"/><ellipse cx="20" cy="8.5" rx="2" ry="4" transform="rotate(144 20 15)"/><ellipse cx="20" cy="8.5" rx="2" ry="4" transform="rotate(216 20 15)"/><ellipse cx="20" cy="8.5" rx="2" ry="4" transform="rotate(288 20 15)"/><path d="M13 10Q15 6 17 8M27 10Q25 6 23 8M13 20Q11 23 13 25M27 20Q29 23 27 25" opacity=".45" stroke-width="1"/></svg>`},
+  {n:'Allium',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="15"/><circle cx="20" cy="10" r="8"/><line x1="20" y1="2" x2="20" y2="5"/><line x1="27.7" y1="4.5" x2="26" y2="7"/><line x1="32" y1="10" x2="28.5" y2="10"/><line x1="27.7" y1="15.5" x2="26" y2="13"/><line x1="12.3" y1="15.5" x2="14" y2="13"/><line x1="8" y1="10" x2="11.5" y2="10"/><line x1="12.3" y1="4.5" x2="14" y2="7"/><circle cx="20" cy="2" r="1.2" fill="currentColor" opacity=".6"/><circle cx="27.7" cy="4.5" r="1.2" fill="currentColor" opacity=".55"/><circle cx="32" cy="10" r="1.2" fill="currentColor" opacity=".55"/></svg>`},
+  {n:'Delphinium',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="5"/><path d="M20 12Q23 10 25 12Q24 16 20 15Q16 16 15 12Q17 10 20 12Z" fill="currentColor" opacity=".2"/><path d="M20 18Q23 16 25 18Q24 22 20 21Q16 22 15 18Q17 16 20 18Z" fill="currentColor" opacity=".2"/><path d="M20 24Q23 22 24 24Q23 28 20 27Q17 28 16 24Q17 22 20 24Z" fill="currentColor" opacity=".18"/><path d="M20 30Q22 28 23 30Q22 33 20 32Q18 33 17 30Q18 28 20 30Z" fill="currentColor" opacity=".15"/><line x1="25" y1="12" x2="28" y2="9"/><line x1="25" y1="18" x2="29" y2="16"/><line x1="24" y1="24" x2="27" y2="22"/></svg>`},
+  {n:'Freesia',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 36Q13 28 16 22Q19 16 20 8"/><path d="M20 8Q22 5 24 8Q23 14 20 12Q17 14 16 8Q18 5 20 8Z"/><path d="M20 14Q22 12 24 14Q23 20 20 18Q17 20 16 14Q18 12 20 14Z" opacity=".7"/><path d="M20 20Q22 18 23 20Q22 26 20 24Q18 26 17 20Q18 18 20 20Z" opacity=".5"/><path d="M14 30Q11 33 10 36M16 26Q13 28 14 32" opacity=".4"/></svg>`},
+  {n:'Scabiosa',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="23"/><circle cx="20" cy="15" r="3" fill="currentColor" opacity=".35"/><circle cx="20" cy="15" r="6"/><ellipse cx="20" cy="8" rx="2" ry="4" transform="rotate(0 20 15)"/><ellipse cx="20" cy="8" rx="2" ry="4" transform="rotate(51 20 15)"/><ellipse cx="20" cy="8" rx="2" ry="4" transform="rotate(102 20 15)"/><ellipse cx="20" cy="8" rx="2" ry="4" transform="rotate(153 20 15)"/><ellipse cx="20" cy="8" rx="2" ry="4" transform="rotate(204 20 15)"/><ellipse cx="20" cy="8" rx="2" ry="4" transform="rotate(255 20 15)"/><ellipse cx="20" cy="8" rx="2" ry="4" transform="rotate(306 20 15)"/></svg>`},
+  {n:'Toadstool',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M14 24C14 38 26 38 26 24"/><path d="M10 24C10 12 30 12 30 24Z" fill="currentColor" opacity=".2"/><circle cx="17" cy="18" r="2.2" fill="currentColor" opacity=".45"/><circle cx="24" cy="16" r="1.7" fill="currentColor" opacity=".4"/><circle cx="21" cy="21" r="1.5" fill="currentColor" opacity=".35"/><line x1="17" y1="24" x2="17" y2="33"/><line x1="23" y1="24" x2="23" y2="33"/></svg>`},
+  {n:'Seed Head',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="20"/><circle cx="20" cy="18" r="3" fill="currentColor" opacity=".3"/><line x1="20" y1="15" x2="20" y2="9"/><line x1="20" y1="15" x2="14" y2="10"/><line x1="20" y1="15" x2="26" y2="10"/><line x1="20" y1="15" x2="12" y2="13"/><line x1="20" y1="15" x2="28" y2="13"/><line x1="20" y1="15" x2="12" y2="17"/><line x1="20" y1="15" x2="28" y2="17"/><line x1="20" y1="15" x2="15" y2="20"/><line x1="20" y1="15" x2="25" y2="20"/><circle cx="20" cy="8.5" r="1.3" fill="currentColor"/><circle cx="14" cy="9.5" r="1.3" fill="currentColor"/><circle cx="26" cy="9.5" r="1.3" fill="currentColor"/></svg>`},
+  {n:'Thistle',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="22"/><circle cx="20" cy="14" r="7"/><circle cx="20" cy="14" r="3.5" fill="currentColor" opacity=".25"/><line x1="13" y1="14" x2="9" y2="13"/><line x1="13" y1="11" x2="10" y2="8"/><line x1="16" y1="7" x2="15" y2="4"/><line x1="20" y1="7" x2="20" y2="4"/><line x1="24" y1="7" x2="25" y2="4"/><line x1="27" y1="11" x2="30" y2="8"/><line x1="27" y1="14" x2="31" y2="13"/></svg>`},
+  {n:'Sea Holly',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="20" y1="38" x2="20" y2="22"/><circle cx="20" cy="14" r="5" fill="currentColor" opacity=".2"/><path d="M20 9Q17 4 13 6Q15 10 20 9M20 9Q23 4 27 6Q25 10 20 9M15 18Q11 18 10 22Q14 21 15 18M25 18Q29 18 30 22Q26 21 25 18M13 13Q9 12 8 15Q11 16 13 13M27 13Q31 12 32 15Q29 16 27 13"/></svg>`},
+  {n:'Globe Thistle',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="19"/><circle cx="20" cy="13" r="7"/><line x1="20" y1="6" x2="20" y2="3"/><line x1="26" y1="8" x2="28.5" y2="6"/><line x1="28" y1="14" x2="31" y2="14"/><line x1="26" y1="20" x2="28.5" y2="22"/><line x1="14" y1="20" x2="11.5" y2="22"/><line x1="12" y1="14" x2="9" y2="14"/><line x1="14" y1="8" x2="11.5" y2="6"/></svg>`},
+  {n:'Ranunculus',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="24"/><circle cx="20" cy="16" r="8"/><circle cx="20" cy="16" r="5.5"/><circle cx="20" cy="16" r="3" fill="currentColor" opacity=".25"/><circle cx="20" cy="16" r="1.2" fill="currentColor" opacity=".55"/></svg>`},
+  {n:'Cornflower',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="23"/><circle cx="20" cy="15" r="3.5" fill="currentColor" opacity=".3"/><path d="M20 11Q17 7 14 8Q15 12 20 11M20 11Q23 7 26 8Q25 12 20 11M15 17Q11 17 11 21Q14 20 15 17M25 17Q29 17 29 21Q26 20 25 17M14 13Q11 10 11 7Q14 9 14 13M26 13Q29 10 29 7Q26 9 26 13"/></svg>`},
+  {n:'Penstemon',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="6"/><path d="M20 12Q23 10 25 13Q23 17 20 15Q17 17 15 13Q17 10 20 12Z" fill="currentColor" opacity=".2"/><path d="M20 18Q23 16 25 19Q23 23 20 21Q17 23 15 19Q17 16 20 18Z" fill="currentColor" opacity=".2"/><path d="M20 24Q23 22 24 25Q23 29 20 27Q17 29 16 25Q17 22 20 24Z" fill="currentColor" opacity=".18"/><line x1="25" y1="13" x2="29" y2="11"/><line x1="25" y1="19" x2="28" y2="17"/></svg>`},
+  {n:'Bleeding Grass',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="5"/><path d="M20 12Q16 10 13 6Q16 5 18 9M20 12Q24 10 27 6Q24 5 22 9M20 18Q15 16 11 13Q14 11 17 15M20 18Q25 16 29 13Q26 11 23 15M20 24Q15 22 10 20Q13 18 17 22M20 24Q25 22 30 20Q27 18 23 22M20 30Q14 28 9 27Q12 25 17 29M20 30Q26 28 31 27Q28 25 23 29"/></svg>`},
+  {n:'Astilbe',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="10"/><path d="M20 14Q17 11 14 8M20 14Q23 11 26 8M20 18Q16 15 12 13M20 18Q24 15 28 13M20 22Q15 19 10 18M20 22Q25 19 30 18M20 26Q15 24 10 24M20 26Q25 24 30 24M20 30Q16 28 13 29M20 30Q24 28 27 29"/><circle cx="14" cy="8" r="1" fill="currentColor" opacity=".6"/><circle cx="26" cy="8" r="1" fill="currentColor" opacity=".6"/><circle cx="12" cy="13" r="1" fill="currentColor" opacity=".5"/><circle cx="28" cy="13" r="1" fill="currentColor" opacity=".5"/></svg>`},
+  {n:'Foxbell',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="8"/><path d="M20 14Q16 11 15 7Q18 5 20 9M20 14Q24 11 25 7Q22 5 20 9"/><path d="M20 20Q16 17 14 13Q17 11 20 16M20 20Q24 17 26 13Q23 11 20 16"/><path d="M20 26Q15 23 13 19Q16 17 20 22M20 26Q25 23 27 19Q24 17 20 22"/><path d="M20 32Q14 29 12 25Q16 23 20 28M20 32Q26 29 28 25Q24 23 20 28"/></svg>`},
+  {n:'Trillium',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="28"/><path d="M20 28Q14 26 11 20Q15 14 20 18Q25 14 29 20Q26 26 20 28Z" fill="currentColor" opacity=".14"/><path d="M13 25Q8 26 7 30Q11 30 13 25M27 25Q32 26 33 30Q29 30 27 25M20 16Q20 11 20 7Q23 9 20 13Q17 9 20 13"/></svg>`},
+  {n:'Gentian',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="8"/><path d="M20 14Q17 12 16 8Q18 6 20 10Q22 6 24 8Q23 12 20 14Z" fill="currentColor" opacity=".25"/><path d="M20 20Q17 18 16 14Q18 12 20 16Q22 12 24 14Q23 18 20 20Z" fill="currentColor" opacity=".22"/><path d="M20 26Q17 24 16 20Q18 18 20 22Q22 18 24 20Q23 24 20 26Z" fill="currentColor" opacity=".18"/><path d="M20 32Q17 30 16 26Q18 24 20 28Q22 24 24 26Q23 30 20 32Z" fill="currentColor" opacity=".15"/></svg>`},
+  {n:'Phlox',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="24"/><circle cx="20" cy="16" r="3" fill="currentColor" opacity=".4"/><path d="M20 16Q17 9 16 5M20 16Q23 9 24 5M20 16Q12 14 9 11M20 16Q28 14 31 11M20 16Q13 20 11 24M20 16Q27 20 29 24"/><circle cx="16" cy="5" r="2.2"/><circle cx="24" cy="5" r="2.2"/><circle cx="9" cy="11" r="2.2"/><circle cx="31" cy="11" r="2.2"/><circle cx="11" cy="24" r="2.2"/><circle cx="29" cy="24" r="2.2"/></svg>`},
+  {n:'Coneflower',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="23"/><ellipse cx="20" cy="14" rx="4" ry="5" fill="currentColor" opacity=".35"/><ellipse cx="20" cy="9.5" rx="2.5" ry="5.5" transform="rotate(0 20 14)"/><ellipse cx="20" cy="9.5" rx="2.5" ry="5.5" transform="rotate(45 20 14)"/><ellipse cx="20" cy="9.5" rx="2.5" ry="5.5" transform="rotate(90 20 14)"/><ellipse cx="20" cy="9.5" rx="2.5" ry="5.5" transform="rotate(135 20 14)"/><ellipse cx="20" cy="9.5" rx="2.5" ry="5.5" transform="rotate(180 20 14)"/><ellipse cx="20" cy="9.5" rx="2.5" ry="5.5" transform="rotate(225 20 14)"/><ellipse cx="20" cy="9.5" rx="2.5" ry="5.5" transform="rotate(270 20 14)"/><ellipse cx="20" cy="9.5" rx="2.5" ry="5.5" transform="rotate(315 20 14)"/></svg>`},
+  {n:'Arrowhead',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="20" y1="38" x2="20" y2="18"/><path d="M20 18Q14 18 10 12Q14 5 20 9Q26 5 30 12Q26 18 20 18Z" fill="currentColor" opacity=".15"/><line x1="20" y1="9" x2="20" y2="18"/><path d="M14 17Q10 20 9 25M26 17Q30 20 31 25" opacity=".4"/></svg>`},
+  {n:'Nightshade',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 36Q13 28 18 22Q23 16 28 8"/><circle cx="16" cy="20" r="4" fill="currentColor" opacity=".22"/><circle cx="16" cy="20" r="4"/><line x1="14" y1="16" x2="12" y2="13"/><line x1="16" y1="16" x2="16" y2="13"/><line x1="18" y1="16" x2="20" y2="13"/><line x1="14" y1="24" x2="13" y2="27"/><line x1="18" y1="24" x2="19" y2="27"/><circle cx="13" cy="28" r="2" fill="currentColor" opacity=".5"/><circle cx="20" cy="28" r="2" fill="currentColor" opacity=".5"/></svg>`},
+  {n:'Spiderwort',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="24"/><circle cx="20" cy="17" r="4.5"/><circle cx="20" cy="17" r="2" fill="currentColor" opacity=".45"/><ellipse cx="20" cy="10.5" rx="2.8" ry="5" transform="rotate(0 20 17)"/><ellipse cx="20" cy="10.5" rx="2.8" ry="5" transform="rotate(120 20 17)"/><ellipse cx="20" cy="10.5" rx="2.8" ry="5" transform="rotate(240 20 17)"/></svg>`},
+  {n:'Ice Plant',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="24"/><circle cx="20" cy="15" r="3.5" fill="currentColor" opacity=".25"/><line x1="20" y1="11.5" x2="20" y2="8"/><line x1="20" y1="11.5" x2="23.5" y2="9"/><line x1="20" y1="11.5" x2="16.5" y2="9"/><line x1="20" y1="18.5" x2="20" y2="22"/><line x1="20" y1="18.5" x2="23.5" y2="21"/><line x1="20" y1="18.5" x2="16.5" y2="21"/><line x1="16.5" y1="12" x2="13" y2="10"/><line x1="23.5" y1="12" x2="27" y2="10"/><line x1="16.5" y1="18" x2="13" y2="20"/><line x1="23.5" y1="18" x2="27" y2="20"/></svg>`},
+  {n:'Torch Ginger',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="18"/><ellipse cx="20" cy="12" rx="6" ry="8" fill="currentColor" opacity=".2"/><ellipse cx="20" cy="12" rx="4" ry="6"/><path d="M14 16Q10 14 9 10Q12 7 14 11M26 16Q30 14 31 10Q28 7 26 11M17 8Q15 5 16 2M23 8Q25 5 24 2" opacity=".5"/></svg>`},
+  {n:'Wild Garlic',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="15"/><circle cx="20" cy="10" r="2"/><line x1="20" y1="8" x2="17" y2="4"/><line x1="20" y1="8" x2="23" y2="4"/><line x1="20" y1="8" x2="14" y2="6"/><line x1="20" y1="8" x2="26" y2="6"/><line x1="20" y1="9" x2="13" y2="9"/><line x1="20" y1="9" x2="27" y2="9"/><circle cx="17" cy="4" r="1.2" fill="currentColor" opacity=".6"/><circle cx="23" cy="4" r="1.2" fill="currentColor" opacity=".6"/><circle cx="14" cy="6" r="1.2" fill="currentColor" opacity=".5"/><circle cx="26" cy="6" r="1.2" fill="currentColor" opacity=".5"/><circle cx="13" cy="9" r="1.2" fill="currentColor" opacity=".5"/><circle cx="27" cy="9" r="1.2" fill="currentColor" opacity=".5"/></svg>`},
+  {n:'Fleabane',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="23"/><circle cx="20" cy="16" r="3" fill="currentColor" opacity=".4"/><ellipse cx="20" cy="9.5" rx="1.5" ry="4.5" transform="rotate(0 20 16)"/><ellipse cx="20" cy="9.5" rx="1.5" ry="4.5" transform="rotate(20 20 16)"/><ellipse cx="20" cy="9.5" rx="1.5" ry="4.5" transform="rotate(40 20 16)"/><ellipse cx="20" cy="9.5" rx="1.5" ry="4.5" transform="rotate(60 20 16)"/><ellipse cx="20" cy="9.5" rx="1.5" ry="4.5" transform="rotate(80 20 16)"/><ellipse cx="20" cy="9.5" rx="1.5" ry="4.5" transform="rotate(100 20 16)"/><ellipse cx="20" cy="9.5" rx="1.5" ry="4.5" transform="rotate(120 20 16)"/><ellipse cx="20" cy="9.5" rx="1.5" ry="4.5" transform="rotate(140 20 16)"/><ellipse cx="20" cy="9.5" rx="1.5" ry="4.5" transform="rotate(160 20 16)"/><ellipse cx="20" cy="9.5" rx="1.5" ry="4.5" transform="rotate(180 20 16)"/><ellipse cx="20" cy="9.5" rx="1.5" ry="4.5" transform="rotate(200 20 16)"/><ellipse cx="20" cy="9.5" rx="1.5" ry="4.5" transform="rotate(220 20 16)"/><ellipse cx="20" cy="9.5" rx="1.5" ry="4.5" transform="rotate(240 20 16)"/><ellipse cx="20" cy="9.5" rx="1.5" ry="4.5" transform="rotate(260 20 16)"/><ellipse cx="20" cy="9.5" rx="1.5" ry="4.5" transform="rotate(280 20 16)"/><ellipse cx="20" cy="9.5" rx="1.5" ry="4.5" transform="rotate(300 20 16)"/><ellipse cx="20" cy="9.5" rx="1.5" ry="4.5" transform="rotate(320 20 16)"/><ellipse cx="20" cy="9.5" rx="1.5" ry="4.5" transform="rotate(340 20 16)"/></svg>`},
+  {n:'Briar Rose',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="25"/><circle cx="20" cy="18" r="5"/><circle cx="20" cy="18" r="2" fill="currentColor" opacity=".4"/><ellipse cx="20" cy="11" rx="3" ry="5.5" transform="rotate(0 20 18)"/><ellipse cx="20" cy="11" rx="3" ry="5.5" transform="rotate(72 20 18)"/><ellipse cx="20" cy="11" rx="3" ry="5.5" transform="rotate(144 20 18)"/><ellipse cx="20" cy="11" rx="3" ry="5.5" transform="rotate(216 20 18)"/><ellipse cx="20" cy="11" rx="3" ry="5.5" transform="rotate(288 20 18)"/><line x1="15" y1="30" x2="13" y2="34"/><line x1="25" y1="30" x2="27" y2="34"/><line x1="20" y1="31" x2="20" y2="35"/></svg>`},
+  {n:'Spider Lily',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="20"/><circle cx="20" cy="17" r="2.5" fill="currentColor" opacity=".4"/><line x1="20" y1="17" x2="20" y2="5"/><line x1="20" y1="17" x2="8" y2="13"/><line x1="20" y1="17" x2="32" y2="13"/><line x1="20" y1="17" x2="10" y2="24"/><line x1="20" y1="17" x2="30" y2="24"/><line x1="20" y1="17" x2="14" y2="28"/><line x1="20" y1="17" x2="26" y2="28"/><circle cx="20" cy="5" r="1.5" fill="currentColor" opacity=".55"/><circle cx="8" cy="13" r="1.5" fill="currentColor" opacity=".5"/><circle cx="32" cy="13" r="1.5" fill="currentColor" opacity=".5"/></svg>`},
+  {n:'Harebell',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="24"/><path d="M20 24Q16 24 14 19Q14 13 20 12Q26 13 26 19Q24 24 20 24Z" fill="currentColor" opacity=".16"/><path d="M20 12Q20 8 20 5M16 14Q12 12 11 8M24 14Q28 12 29 8" opacity=".45"/><circle cx="20" cy="18" r="1.5" fill="currentColor" opacity=".5"/></svg>`},
+  {n:'Oxeye Daisy',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="24"/><circle cx="20" cy="16" r="4.5" fill="currentColor" opacity=".3"/><ellipse cx="20" cy="8" rx="2.2" ry="5" transform="rotate(0 20 16)"/><ellipse cx="20" cy="8" rx="2.2" ry="5" transform="rotate(30 20 16)"/><ellipse cx="20" cy="8" rx="2.2" ry="5" transform="rotate(60 20 16)"/><ellipse cx="20" cy="8" rx="2.2" ry="5" transform="rotate(90 20 16)"/><ellipse cx="20" cy="8" rx="2.2" ry="5" transform="rotate(120 20 16)"/><ellipse cx="20" cy="8" rx="2.2" ry="5" transform="rotate(150 20 16)"/><ellipse cx="20" cy="8" rx="2.2" ry="5" transform="rotate(180 20 16)"/><ellipse cx="20" cy="8" rx="2.2" ry="5" transform="rotate(210 20 16)"/><ellipse cx="20" cy="8" rx="2.2" ry="5" transform="rotate(240 20 16)"/><ellipse cx="20" cy="8" rx="2.2" ry="5" transform="rotate(270 20 16)"/><ellipse cx="20" cy="8" rx="2.2" ry="5" transform="rotate(300 20 16)"/><ellipse cx="20" cy="8" rx="2.2" ry="5" transform="rotate(330 20 16)"/></svg>`},
+  // SEASONAL SPECIALS (12 unique — one per month)
+  {n:'Snowdrop',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="18"/><path d="M20 18Q20 14 20 10"/><ellipse cx="20" cy="23" rx="4" ry="6" fill="currentColor" opacity=".15"/><path d="M16 22Q20 16 24 22Q20 28 16 22Z"/><path d="M18 12Q20 10 22 12"/><path d="M17 14Q20 12 23 14" opacity=".5"/></svg>`,seasonal:true},
+  {n:'Violet',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="24"/><ellipse cx="20" cy="18" rx="5" ry="8"/><ellipse cx="13" cy="20" rx="5" ry="7" transform="rotate(40 13 20)"/><ellipse cx="27" cy="20" rx="5" ry="7" transform="rotate(-40 27 20)"/><circle cx="20" cy="19" r="2.5" fill="currentColor" opacity=".4"/><path d="M15 34Q17 31 20 33"/></svg>`,seasonal:true},
+  {n:'Cherry',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 22Q16 14 12 8Q16 10 20 16Q24 10 28 8Q24 14 20 22"/><circle cx="14" cy="30" r="6" fill="currentColor" opacity=".3"/><circle cx="26" cy="30" r="6" fill="currentColor" opacity=".3"/><line x1="14" y1="24" x2="14" y2="30"/><line x1="26" y1="24" x2="26" y2="30"/></svg>`,seasonal:true},
+  {n:'Magnolia',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="22"/><path d="M20 22Q14 18 12 12Q16 6 20 10Q24 6 28 12Q26 18 20 22Z"/><path d="M20 10Q18 7 20 4Q22 7 20 10"/><path d="M14 18Q10 16 9 12" opacity=".5"/><path d="M26 18Q30 16 31 12" opacity=".5"/></svg>`,seasonal:true},
+  {n:'Peach Blossom',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="22"/><circle cx="20" cy="15" r="7"/><ellipse cx="20" cy="7" rx="3" ry="5" transform="rotate(0 20 15)"/><ellipse cx="20" cy="7" rx="3" ry="5" transform="rotate(72 20 15)"/><ellipse cx="20" cy="7" rx="3" ry="5" transform="rotate(144 20 15)"/><ellipse cx="20" cy="7" rx="3" ry="5" transform="rotate(216 20 15)"/><ellipse cx="20" cy="7" rx="3" ry="5" transform="rotate(288 20 15)"/><circle cx="20" cy="15" r="2.5" fill="currentColor" opacity=".4"/></svg>`,seasonal:true},
+  {n:'Jasmine',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 38Q14 28 20 22Q26 16 32 8"/><circle cx="16" cy="18" r="5"/><circle cx="24" cy="12" r="5"/><line x1="13" y1="14" x2="11" y2="11"/><line x1="16" y1="13" x2="16" y2="10"/><line x1="19" y1="14" x2="21" y2="11"/><line x1="21" y1="8" x2="19" y2="5"/><line x1="24" y1="7" x2="24" y2="4"/><line x1="27" y1="8" x2="29" y2="5"/></svg>`,seasonal:true},
+  {n:'Sunflower King',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="22"/><circle cx="20" cy="15" r="7"/><circle cx="20" cy="15" r="4" fill="currentColor" opacity=".4"/><ellipse cx="20" cy="5" rx="2.5" ry="5" transform="rotate(0 20 15)"/><ellipse cx="20" cy="5" rx="2.5" ry="5" transform="rotate(30 20 15)"/><ellipse cx="20" cy="5" rx="2.5" ry="5" transform="rotate(60 20 15)"/><ellipse cx="20" cy="5" rx="2.5" ry="5" transform="rotate(90 20 15)"/><ellipse cx="20" cy="5" rx="2.5" ry="5" transform="rotate(120 20 15)"/><ellipse cx="20" cy="5" rx="2.5" ry="5" transform="rotate(150 20 15)"/><ellipse cx="20" cy="5" rx="2.5" ry="5" transform="rotate(180 20 15)"/><ellipse cx="20" cy="5" rx="2.5" ry="5" transform="rotate(210 20 15)"/><ellipse cx="20" cy="5" rx="2.5" ry="5" transform="rotate(240 20 15)"/><ellipse cx="20" cy="5" rx="2.5" ry="5" transform="rotate(270 20 15)"/><ellipse cx="20" cy="5" rx="2.5" ry="5" transform="rotate(300 20 15)"/><ellipse cx="20" cy="5" rx="2.5" ry="5" transform="rotate(330 20 15)"/></svg>`,seasonal:true},
+  {n:'Dahlia',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="24"/><circle cx="20" cy="17" r="7"/><circle cx="20" cy="17" r="3.5" fill="currentColor" opacity=".3"/><ellipse cx="20" cy="8" rx="2.5" ry="4.5" transform="rotate(0 20 17)"/><ellipse cx="20" cy="8" rx="2.5" ry="4.5" transform="rotate(45 20 17)"/><ellipse cx="20" cy="8" rx="2.5" ry="4.5" transform="rotate(90 20 17)"/><ellipse cx="20" cy="8" rx="2.5" ry="4.5" transform="rotate(135 20 17)"/><ellipse cx="20" cy="8" rx="2.5" ry="4.5" transform="rotate(180 20 17)"/><ellipse cx="20" cy="8" rx="2.5" ry="4.5" transform="rotate(225 20 17)"/><ellipse cx="20" cy="8" rx="2.5" ry="4.5" transform="rotate(270 20 17)"/><ellipse cx="20" cy="8" rx="2.5" ry="4.5" transform="rotate(315 20 17)"/></svg>`,seasonal:true},
+  {n:'Goldenrod',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="8"/><path d="M20 14Q22 11 24 9Q23 13 20 14M20 14Q18 11 16 9Q17 13 20 14"/><path d="M20 19Q22 16 25 14Q23 18 20 19M20 19Q18 16 15 14Q17 18 20 19"/><path d="M20 24Q22 21 26 19Q23 23 20 24M20 24Q18 21 14 19Q17 23 20 24"/><path d="M20 29Q22 26 25 24Q23 28 20 29M20 29Q18 26 15 24Q17 28 20 29"/></svg>`,seasonal:true},
+  {n:'Chrysanthemum',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="24"/><circle cx="20" cy="16" r="8"/><circle cx="20" cy="16" r="3" fill="currentColor" opacity=".3"/><ellipse cx="20" cy="7" rx="1.5" ry="4" transform="rotate(0 20 16)"/><ellipse cx="20" cy="7" rx="1.5" ry="4" transform="rotate(30 20 16)"/><ellipse cx="20" cy="7" rx="1.5" ry="4" transform="rotate(60 20 16)"/><ellipse cx="20" cy="7" rx="1.5" ry="4" transform="rotate(90 20 16)"/><ellipse cx="20" cy="7" rx="1.5" ry="4" transform="rotate(120 20 16)"/><ellipse cx="20" cy="7" rx="1.5" ry="4" transform="rotate(150 20 16)"/><ellipse cx="20" cy="7" rx="1.5" ry="4" transform="rotate(180 20 16)"/><ellipse cx="20" cy="7" rx="1.5" ry="4" transform="rotate(210 20 16)"/><ellipse cx="20" cy="7" rx="1.5" ry="4" transform="rotate(240 20 16)"/><ellipse cx="20" cy="7" rx="1.5" ry="4" transform="rotate(270 20 16)"/><ellipse cx="20" cy="7" rx="1.5" ry="4" transform="rotate(300 20 16)"/><ellipse cx="20" cy="7" rx="1.5" ry="4" transform="rotate(330 20 16)"/></svg>`,seasonal:true},
+  {n:'Winter Fern',s:`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="6"/><path d="M20 32Q16 30 12 28Q15 26 20 28M20 32Q24 30 28 28Q25 26 20 28M20 26Q16 24 11 22Q14 20 20 22M20 26Q24 24 29 22Q26 20 20 22M20 20Q17 18 13 16Q16 14 20 16M20 20Q23 18 27 16Q24 14 20 16M20 14Q18 12 15 10Q18 8 20 10M20 14Q22 12 25 10Q22 8 20 10"/></svg>`,seasonal:true},
+];
+
+// seasonal doodle per month index (months 0-11)
+const SEASONAL_IDX=[D.length-12,D.length-11,D.length-10,D.length-9,D.length-8,D.length-7,D.length-6,D.length-5,D.length-4,D.length-3,D.length-2,D.length-1];
+
+/* ═══════════════════════════════════════════════════════
+   MOOD DEFINITIONS
+═══════════════════════════════════════════════════════ */
+const MOODS=[
+  {id:'calm',label:'Calm',color:'#a8d8ea',s:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 13Q10.5 15 12 15Q13.5 15 15 13"/><circle cx="9" cy="10" r="1" fill="currentColor"/><circle cx="15" cy="10" r="1" fill="currentColor"/></svg>`},
+  {id:'bright',label:'Bright',color:'#ffe066',s:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 13Q10.5 16 12 16Q13.5 16 15 13"/><circle cx="9" cy="10" r="1.2" fill="currentColor"/><circle cx="15" cy="10" r="1.2" fill="currentColor"/><path d="M9 7Q10 5 12 5Q14 5 15 7" opacity=".5"/></svg>`},
+  {id:'heavy',label:'Heavy',color:'#8899bb',s:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8 14Q10 13 12 14Q14 13 16 14"/><circle cx="9" cy="10" r="1" fill="currentColor"/><circle cx="15" cy="10" r="1" fill="currentColor"/><path d="M9 17Q11 18 12 18Q13 18 15 17" opacity=".4"/></svg>`},
+  {id:'scattered',label:'Scattered',color:'#ffb347',s:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 14Q10 13 12 14Q13 13 15 14"/><circle cx="8.5" cy="10" r="1" fill="currentColor"/><circle cx="15.5" cy="10" r="1" fill="currentColor"/><path d="M7 8L8 7M17 8L16 7M8 7L10 9" opacity=".5"/></svg>`},
+  {id:'warm',label:'Warm',color:'#ffaa80',s:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 13Q10.5 15.5 12 15Q13.5 15.5 15 13"/><circle cx="9" cy="10" r="1" fill="currentColor"/><circle cx="15" cy="10" r="1" fill="currentColor"/><path d="M8 15Q9 17 12 17Q15 17 16 15" opacity=".4"/></svg>`},
+  {id:'quiet',label:'Quiet',color:'#c5b8f5',s:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 13Q10.5 14.5 12 14Q13.5 14.5 15 13"/><line x1="9" y1="10" x2="11" y2="10"/><line x1="13" y1="10" x2="15" y2="10"/></svg>`},
+  {id:'restless',label:'Restless',color:'#ff8080',s:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8 14Q10 12 12 14Q14 12 16 14"/><circle cx="9" cy="10" r="1" fill="currentColor"/><circle cx="15" cy="10" r="1" fill="currentColor"/><path d="M10 7L12 9M14 7L12 9" opacity=".5"/></svg>`},
+  {id:'grateful',label:'Grateful',color:'#a8f5b8',s:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8 12Q10 17 12 16Q14 17 16 12"/><circle cx="9" cy="9.5" r="1.2" fill="currentColor"/><circle cx="15" cy="9.5" r="1.2" fill="currentColor"/><path d="M12 3C12 3 14 5 12 7C10 5 12 3 12 3Z" fill="currentColor" opacity=".4"/></svg>`},
+];
+
+/* ═══════════════════════════════════════════════════════
+   PROMPTS
+═══════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════
+   PLANT DESCRIPTIONS
+═══════════════════════════════════════════════════════ */
+const PLANT_DESC={
+  'Wildflower':'A free spirit that blooms wherever it pleases — resilient, untamed, and beautiful in its randomness.',
+  'Leaf':'Simple and enduring. Every leaf turns sunlight into life, quietly doing the most important work.',
+  'Oak Tree':'Patience and strength. Oaks grow slow but live long — your memories are building roots.',
+  'Mushroom':'Hidden networks below the surface. Things are growing even when you cannot see them.',
+  'Cactus':'Thrives in harsh conditions. You can store what you need and bloom when the time is right.',
+  'Sunflower':'Always turns toward the light. A reminder to seek warmth even on ordinary days.',
+  'Fern':'Ancient and graceful. Ferns have existed for 360 million years — some things endure.',
+  'Dandelion':'Seeds carried on the wind. Your thoughts scatter and take root in unexpected places.',
+  'Tulip':'A promise of spring. Even when dormant, tulips are quietly preparing their return.',
+  'Acorn':'Tiny vessels of enormous potential. Everything you need is already inside.',
+  'Clover':'Lucky by nature, but mostly because you were paying attention.',
+  'Rose':'Layers upon layers. There is always more beneath what the eye first sees.',
+  'Lavender':'Calming and restorative. Some memories are meant to be breathed in slowly.',
+  'Daisy':'Uncomplicated joy. The simplest things are often the ones worth remembering.',
+  'Pine Tree':'Evergreen through every season. Steadfast through what changes and what stays the same.',
+  'Succulent':'Stores what it needs and gives back slowly. A quiet, patient kind of abundance.',
+  'Bamboo':'Bends but never breaks. Flexibility is its own form of strength.',
+  'Morning Glory':'Opens fresh each morning and closes at dusk. Each day is its own complete story.',
+  'Cattail':'Rooted in the water\'s edge — where land and flow meet. Liminal and still.',
+  'Marigold':'Bright and a little fierce. Known to repel what doesn\'t belong and welcome what does.',
+  'Sprout':'Something new is beginning. Small but full of direction, reaching already.',
+  'Cosmos':'Light as air, dancing in the slightest breeze. Not all beauty needs to be anchored.',
+  'Lotus':'Rises pure from muddy water. Beauty is not diminished by difficult beginnings.',
+  'Poppy':'Delicate but vivid. Sometimes the most fragile things leave the deepest impressions.',
+  'Iris':'Named for the rainbow. Every shade of experience has its own dignity.',
+  'Orchid':'Rare and particular. Some things only bloom under exactly the right conditions.',
+  'Rose (Orchid)':'Rare and particular. Some things only bloom under exactly the right conditions.',
+  'Hanging Pothos':'Finds a way to grow in any direction. Adapts, trails, and keeps going.',
+  'Mint Sprig':'Persistent and refreshing. A small thing that fills the whole space with its presence.',
+  'Weeping Willow':'Flexible and feeling. It is okay to bend toward what moves you.',
+  'Bonsai':'Shaped over time by patient hands. A small thing can hold enormous intention.',
+  'Ginkgo':'One of the oldest living species. A living bridge across deep time.',
+  'Wisteria':'Cascades and clings and returns every year. Some beauty is worth waiting for.',
+  'Peony':'Lush and brief. Some of the best things last only a season.',
+  'Palm Tree':'Bends in storms and grows toward sky. Grounded and reaching at once.',
+  'Foxglove':'Tall and surprising. Something wild growing in an ordinary place.',
+  'Hyacinth':'Intensely fragrant. Some memories return to you before you even have a name for them.',
+  'Chamomile':'Gentle and steady. Small comforts deserve to be written down.',
+  'Sage':'Clearing and wise. Sometimes you need to name what you are leaving behind.',
+  'Aloe Vera':'Cooling and regenerative. Quiet healing happens more than you notice.',
+  'Monstera':'Grows toward the light by cutting holes in its own leaves. Openness is a strategy.',
+  'Wheat':'The result of patient tending. What you grow feeds something real.',
+  'Maple Leaf':'Brilliant in its ending. Some things are most beautiful as they let go.',
+  'Carnation':'Long-lasting and layered. A memory that holds up to revisiting.',
+  'Cherry Blossom':'Fleeting and celebrated. The impermanence is part of what makes it matter.',
+  'Daffodil':'One of the first to appear after cold. Courage arrives before warmth does.',
+  'Pansy':'Faces tipped upward, paying attention. Thoughtful small things.',
+  'Dahlia':'Complex and symmetrical. Some days have more layers than you first realized.',
+  'Bird of Paradise':'Unexpected and bold. Something in you reaches beyond the expected.',
+  'Holly':'Stays green through winter. There is life even in the coldest stretch.',
+  'Lavender (Stalk)':'A dried thing that still holds its scent. Memory is a form of preservation.',
+  'Venus Fly Trap':'Alert and waiting. Knowing what to hold and what to release is a skill.',
+  'Daisy (Chamomile)':'Gentle and steady. Small comforts deserve to be written down.',
+  'Water Lily':'Rooted below, floating above. Grounded in what you cannot always see.',
+  'Clover (Four)':'Lucky by nature, but mostly because you were paying attention.',
+  'Bleeding Heart':'Love that bends gracefully under its own weight — still beautiful for it.',
+  'Edelweiss':'A rare thing that grows only where few dare to climb. You earned this view.',
+  'Thistle':'What others call stubborn, you call resilient. The purple crown is well-earned.',
+  'Snowflake Plant':'Symmetry repeated endlessly, never quite the same twice. Today was one of a kind.',
+  'Columbine':'Whimsical and gravity-defying. Some days delight you before you can explain why.',
+  'Lupine':'Stands tall in a column of color. Towers of small, earnest efforts.',
+  'Foxbell':'A bell that rings only in the wind. Listen — something is trying to reach you.',
+  'Passionflower':'Elaborate and layered. There is more complexity in this moment than it first appeared.',
+  'Fritillary':'Checkered and rare. Patterns only reveal themselves when you look closely.',
+  'Sea Holly':'Spiky on the outside, intricate at its heart. Not everything soft announces itself.',
+  'Sweet Pea':'Climbs upward, holding on gently. Some joy is found by leaning into what rises.',
+  'Anemone':'A dark center surrounded by open petals. Depth and openness are not opposites.',
+  'Camellia':'Immaculate and unhurried. Some things bloom with no fanfare and no apology.',
+  'Agapanthus':'A burst from a single point outward. What starts small can radiate far.',
+  'Spiderwort':'Grows in unexpected places and thrives anyway. Adaptability is quiet confidence.',
+  'Stargazer Lily':'Faces upward. Even in ordinary moments, something in you is reaching toward light.',
+  'Heather':'Covers whole hillsides in small gestures. Abundance through repetition.',
+  'Digitalis':'Tall and precise. Each bell holds its own particular silence.',
+  'Borage':'Star-shaped and blue. Traditionally, it brings courage. You had some today.',
+  'Allium':'A hundred small blooms on a single stem. Collective things can be extraordinary.',
+  'Night-Blooming Cereus':'Only opens in darkness. Some truths are only visible when the day has ended.',
+  'Gentian':'The deepest blue in nature. Some feelings are colors you cannot quite describe.',
+  'Verbena':'Clusters of small joys. Happiness doesn\'t always arrive in one large piece.',
+  'Phlox':'Cascades and spills. Some things are better when they overflow a little.',
+  'Cyclamen':'Turns its face backward as it opens. Sometimes growth means revisiting.',
+  'Forget-Me-Not':'Tiny and insistent. The small moments are the ones that last.',
+  'Hosta':'All leaf, no flower — and still magnificent. Sometimes the quiet ones hold the most.',
+  'Bleeding Grass':'Arches and bends in any breeze. Softness is a form of elegance.',
+  'Coneflower':'The center stands proud while the petals ease back. Confidence and release together.',
+  'Snowbell':'Hangs like a held breath before it rings. Waiting is its own kind of presence.',
+  'Trillium':'Three of everything: leaf, petal, time. Past, present, and what is still becoming.',
+  'Wood Sorrel':'Closes at night and opens again. Some things simply know when to rest.',
+  'Queen Anne Lace':'A constellation fallen to earth. The ordinary sky is full of stars.',
+  'Larkspur':'Stacks its blooms like careful thoughts. Not everything must arrive at once.',
+  'Shooting Star':'Petals swept back as if just landed. Something arrived today worth noticing.',
+  'Toadflax':'Small and particular. Grows in walls and cracks — finds beauty in the in-between.',
+  'Bugle':'A low, creeping carpet of color. Not all important things stand tall.',
+  'Thorn Bush':'Protects its sweetness behind sharp edges. Some things are worth the careful approach.',
+  'Sweetgrass':'Braided and sacred. What is woven together with care has a scent of its own.',
+  'Figwort':'Unassuming and useful. The quiet work is still work.',
+  'Plume Poppy':'Dramatic plumes above still roots. What rises up begins in stillness below.',
+  'Bee Balm':'Invites the whole garden community. You are better in relationship than in isolation.',
+  'Ghost Orchid':'Rare, elusive, and unforgettable. Some things you only glimpse once.',
+  'Jacob\'s Ladder':'Each rung a small step. You are higher than you realize from where you began.',
+  'Cosmos (Double)':'Layer upon layer of light. Some days deserve more than one look.',
+  'Sundew':'Glistens in the light and holds what comes to it. Softness can be a kind of strength.',
+  'Bat Flower':'Strange and magnificent. The unusual has its own particular beauty.',
+  'Rainbow Plant':'Each arc a different distance from the source. You contain more range than you know.',
+  'Bottle Brush':'Dense with small gestures, each one a flame. Warmth shown through accumulation.',
+  'Sedge':'Grows between water and land. You know how to inhabit the in-between.',
+  'Coleus':'More leaf than flower, and still vibrant. Color does not require occasion.',
+  'Pitcher Plant':'Holds what falls into it. Some days collect things you did not expect to keep.',
+  'Protea':'Ancient and otherworldly. Some things have been exactly themselves for a very long time.',
+  'Snapdragon':'Opens and closes like a conversation. You spoke, and it mattered.',
+  'Lisianthus':'Ruffled and soft at the edges. Complexity does not have to be sharp.',
+  'Hellebore':'Nods downward and still blooms. Quiet dignity in difficult conditions.',
+  'Periwinkle':'A gentle spiral unfurling. Things resolve if you give them enough turns.',
+  'Arrowhead':'Points upward with certainty. Direction is its own kind of peace.',
+  'Nightshade':'Beautiful and misunderstood. Not everything dangerous looks the part.',
+  'Ice Plant':'Crystalline at the edges. Even cold things can catch the light.',
+  'Torch Ginger':'Burns with its own particular warmth. Some things glow from the inside.',
+  'Wild Garlic':'Fills the air before it comes into view. Presence announces itself.',
+  'Fleabane':'More petals than seems necessary. There is no such thing as too generous.',
+  'Briar Rose':'Old and remembered. Some stories become more beautiful the longer they are told.',
+  'Spider Lily':'Reaches in all directions at once. Curiosity that does not collapse inward.',
+  'Harebell':'Rings in the gentlest breeze. You can hear it if you are quiet enough.',
+  'Oxeye Daisy':'Stands at roadsides and meadows alike. Beauty does not require a special occasion.',
+};
+function getPlantDesc(name){
+  return PLANT_DESC[name]||'A quiet living thing. It grows, it reaches, it remembers light.';
+}
+
+const PROMPTS=[
+  'What surprised you today?','Who made you smile?','What are you letting go of?',
+  'What small thing was actually beautiful?','What do you want to remember in a year?',
+  'What were you grateful for today?','What challenged you?','What did your body feel like today?',
+  'What conversation stayed with you?','What did you notice that you usually miss?',
+  'What did today teach you?','What are you looking forward to?',
+];
+
+/* ═══════════════════════════════════════════════════════
+   WEATHER ICONS (SVG)
+═══════════════════════════════════════════════════════ */
+const WEATHER_ICONS={
+  Clear:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="3.5"/><line x1="10" y1="3" x2="10" y2="5"/><line x1="10" y1="15" x2="10" y2="17"/><line x1="3" y1="10" x2="5" y2="10"/><line x1="15" y1="10" x2="17" y2="10"/><line x1="5.2" y1="5.2" x2="6.6" y2="6.6"/><line x1="13.4" y1="13.4" x2="14.8" y2="14.8"/><line x1="14.8" y1="5.2" x2="13.4" y2="6.6"/><line x1="6.6" y1="13.4" x2="5.2" y2="14.8"/></svg>`,
+  Clouds:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 14a4 4 0 014-4 5.5 5.5 0 0110 1.5A3.5 3.5 0 0116 17H5a3 3 0 01-1-5.83"/></svg>`,
+  Rain:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 11a4 4 0 014-4 5.5 5.5 0 0110 1.5A3.5 3.5 0 0116 14H5"/><line x1="8" y1="17" x2="7" y2="19"/><line x1="12" y1="17" x2="11" y2="19"/><line x1="16" y1="17" x2="15" y2="19"/></svg>`,
+  Snow:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 10a4 4 0 014-4 5 5 0 019.5 1A3 3 0 0115 13H5a3 3 0 01-1-5.83"/><line x1="8" y1="17" x2="8" y2="17.01"/><line x1="12" y1="17" x2="12" y2="17.01"/><line x1="10" y1="19" x2="10" y2="19.01"/><line x1="6" y1="19" x2="6" y2="19.01"/><line x1="14" y1="19" x2="14" y2="19.01"/></svg>`,
+  Thunderstorm:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11a4 4 0 014-4 5 5 0 019.5 1A3 3 0 0115 14H5"/><polyline points="11,14 9,18 12,18 10,22"/></svg>`,
+  Mist:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="3" y1="8" x2="17" y2="8"/><line x1="5" y1="12" x2="15" y2="12"/><line x1="3" y1="16" x2="17" y2="16"/></svg>`,
+};
+
+/* ═══════════════════════════════════════════════════════
+   PALETTE DEFINITIONS
+═══════════════════════════════════════════════════════ */
+const PALETTES=[
+  {id:'default',label:'Blue',color:'#1a00ff'},
+  {id:'forest',label:'Forest',color:'#227a38'},
+  {id:'terra',label:'Terra',color:'#b34a1e'},
+  {id:'indigo',label:'Indigo',color:'#4a1a99'},
+  {id:'midnight',label:'Ink',color:'#1a1a35'},
+];
+
+/* ═══════════════════════════════════════════════════════
+   CONSTANTS
+═══════════════════════════════════════════════════════ */
+const MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MNS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DW=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const SK='thoughtgarden_v2';
+
+/* ═══════════════════════════════════════════════════════
+   PERSISTENCE
+═══════════════════════════════════════════════════════ */
+let E={};
+const load_=()=>{
+  try{E=JSON.parse(localStorage.getItem(SK)||'{}');
+    Object.keys(E).forEach(k=>{
+      if(E[k].photo!==undefined&&!E[k].photos){E[k].photos=E[k].photo?[E[k].photo]:[];delete E[k].photo;}
+      if(!E[k].photos)E[k].photos=[];
+    });
+  }catch(e){E={};}
+};
+const save_=()=>{try{localStorage.setItem(SK,JSON.stringify(E));}catch(e){showToast('Storage full');}};
+load_();
+
+/* ═══════════════════════════════════════════════════════
+   SETTINGS STATE
+═══════════════════════════════════════════════════════ */
+let S={pal:'default',hand:0,nightMode:'auto'};
+try{Object.assign(S,JSON.parse(localStorage.getItem('tg_settings')||'{}'));}catch(e){}
+const saveS=()=>localStorage.setItem('tg_settings',JSON.stringify(S));
+function applySettings(){
+  document.body.setAttribute('data-pal',S.pal==='default'?'':S.pal);
+  document.body.setAttribute('data-hand',S.hand?'1':'');
+  applyNight();
+  document.getElementById('font-clean').classList.toggle('active',!S.hand);
+  document.getElementById('font-hand').classList.toggle('active',!!S.hand);
+  document.querySelectorAll('.pal-dot').forEach(d=>d.classList.toggle('active',d.dataset.pal===(S.pal||'default')));
+  const nm=S.nightMode||'off';
+  document.getElementById('night-sub').textContent=nm==='on'?'On (parchment)':'Off (dark)';
+  document.getElementById('night-toggle').classList.toggle('on',nm==='on');
+}
+function applyNight(){
+  const h=new Date().getHours();
+  const auto=(h>=21||h<6);
+  const isNight=S.nightMode==='on'||(S.nightMode==='auto'&&auto);
+  document.body.setAttribute('data-night',isNight?'1':'');
+  S.isNight=isNight;
+}
+setInterval(applyNight,60000);
+function cycleNightMode(){
+  // Simple 2-state: on or off (auto removed for clarity)
+  S.nightMode=S.nightMode==='on'?'off':'on';
+  saveS();applySettings();
+}
+function setFont(v){S.hand=v;saveS();applySettings();}
+function setPal(id){S.pal=id;saveS();applySettings();}
+function openSettings(){
+  document.getElementById('settings-sheet').classList.add('open');
+  renderMilestoneList();
+}
+function closeSettings(){document.getElementById('settings-sheet').classList.remove('open');}
+function settingsOvClick(e){if(e.target===document.getElementById('settings-sheet'))closeSettings();}
+
+// Swipe-down-to-close for settings sheet
+(function(){
+  const sheet=document.getElementById('settings-sheet-inner');
+  let startY=0,startScroll=0,dragging=false;
+  function onStart(e){
+    const t=e.touches?e.touches[0]:e;
+    startY=t.clientY;startScroll=sheet.scrollTop;dragging=true;
+    sheet.style.transition='none';
+  }
+  function onMove(e){
+    if(!dragging)return;
+    const t=e.touches?e.touches[0]:e;
+    const dy=t.clientY-startY;
+    if(dy>0&&startScroll<=0){
+      sheet.style.transform=`translateY(${dy}px)`;
+      if(e.cancelable)e.preventDefault();
+    }
+  }
+  function onEnd(e){
+    if(!dragging)return;dragging=false;
+    sheet.style.transition='';
+    const t=e.changedTouches?e.changedTouches[0]:e;
+    const dy=t.clientY-startY;
+    if(dy>90){closeSettings();sheet.style.transform='';}
+    else{sheet.style.transform='';}
+  }
+  sheet.addEventListener('touchstart',onStart,{passive:true});
+  sheet.addEventListener('touchmove',onMove,{passive:false});
+  sheet.addEventListener('touchend',onEnd,{passive:true});
+})();
+
+// Build palette row
+const palRow=document.getElementById('pal-row');
+PALETTES.forEach(p=>{
+  const d=document.createElement('button');d.className='pal-dot';d.dataset.pal=p.id;
+  d.style.background=p.color;d.title=p.label;d.onclick=()=>setPal(p.id);palRow.appendChild(d);
+});
+applySettings();
+
+/* ═══════════════════════════════════════════════════════
+   DATE HELPERS
+═══════════════════════════════════════════════════════ */
+const todayKey=()=>{const d=new Date();return fk(d.getFullYear(),d.getMonth()+1,d.getDate());};
+const fk=(y,m,d)=>`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+const pk=k=>{const[y,m,d]=k.split('-').map(Number);return{y,m,d,date:new Date(y,m-1,d)};};
+const diy=y=>((y%4===0&&y%100!==0)||y%400===0)?366:365;
+
+function doodleFor(k){
+  // If entry has a stored plant index, always use that (stable across edits)
+  if(E[k]&&E[k].plantIdx!==undefined)return D[E[k].plantIdx%D.length];
+  // For display before saving: deterministic hash of the date key → any plant in full set
+  let h=5381;for(let i=0;i<k.length;i++)h=((h*33)^k.charCodeAt(i))>>>0;
+  return D[h%D.length];
+}
+
+// Assign a random (hash-based) plant index to an entry the first time it's saved
+function assignPlantIdx(k){
+  if(!E[k])return;
+  if(E[k].plantIdx===undefined){
+    let h=5381;for(let i=0;i<k.length;i++)h=((h*33)^k.charCodeAt(i))>>>0;
+    E[k].plantIdx=h%D.length;
+    save_();
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════ */
+let CV='today',gy=new Date().getFullYear(),openEntryKey=null,etk=null;
+let wPhotos=[],mPhotos=[],wMood=null,mMood=null;
+let promptTimer=null,promptShown=false;
+let recognition=null,isRecording=false;
+let currentShareKey=null;
+
+/* ═══════════════════════════════════════════════════════
+   MOOD UI
+═══════════════════════════════════════════════════════ */
+function buildMoodGrid(containerId,selectedId,onSelect){
+  const g=document.getElementById(containerId);g.innerHTML='';
+  MOODS.forEach(m=>{
+    const b=document.createElement('button');b.className='mood-btn'+(selectedId===m.id?' selected':'');
+    b.innerHTML=m.s+`<span>${m.label}</span>`;
+    b.onclick=()=>{onSelect(m.id);buildMoodGrid(containerId,m.id,onSelect);};
+    g.appendChild(b);
+  });
+}
+buildMoodGrid('mood-grid',null,id=>{wMood=id;});
+// modal-mood-grid removed (mood tracker disabled)
+
+function moodPillHTML(moodId){
+  const m=MOODS.find(x=>x.id===moodId);if(!m)return'';
+  return`<div class="mood-pill" style="border-color:${m.color}40;background:${m.color}18">${m.s}<span>${m.label}</span></div>`;
+}
+
+/* ═══════════════════════════════════════════════════════
+   WEATHER
+═══════════════════════════════════════════════════════ */
+async function fetchWeather(){
+  try{
+    const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{timeout:4000}));
+    const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&current_weather=true`);
+    const d=await r.json();const wc=d.current_weather?.weathercode;
+    if(wc===undefined)return null;
+    let cond='Clear';
+    if(wc>=95)cond='Thunderstorm';else if(wc>=71)cond='Snow';else if(wc>=51)cond='Rain';else if(wc>=45)cond='Mist';else if(wc>=1)cond='Clouds';
+    const temp=Math.round(d.current_weather.temperature);
+    return{cond,temp,unit:'°C'};
+  }catch(e){return null;}
+}
+
+function weatherTagHTML(w){
+  if(!w)return'';const ico=WEATHER_ICONS[w.cond]||WEATHER_ICONS.Clear;
+  return`<div class="weather-tag">${ico}<span>${w.cond} · ${w.temp}${w.unit}</span></div>`;
+}
+
+/* ═══════════════════════════════════════════════════════
+   PHOTO UTILITIES
+═══════════════════════════════════════════════════════ */
+const f2b=(f,cb)=>{const r=new FileReader();r.onload=e=>cb(e.target.result);r.readAsDataURL(f);};
+const triggerAdd=id=>document.getElementById(id).click();
+
+document.getElementById('w-fi').addEventListener('change',function(e){
+  const f=e.target.files[0];if(!f)return;f2b(f,d=>{wPhotos.push(d);renderStrip('w-pinner','w-apb',wPhotos);});this.value='';
+});
+document.getElementById('m-fi').addEventListener('change',function(e){
+  const f=e.target.files[0];if(!f)return;f2b(f,d=>{mPhotos.push(d);renderStrip('m-pinner','m-apb',mPhotos);});this.value='';
+});
+
+function renderStrip(innerId,apbId,arr){
+  const inner=document.getElementById(innerId);const apb=document.getElementById(apbId);
+  // ensure photos sub-row exists
+  let photosRow=inner.querySelector('.pinner-photos');
+  if(!photosRow){photosRow=document.createElement('div');photosRow.className='pinner-photos';inner.insertBefore(photosRow,apb);}
+  photosRow.innerHTML='';
+  arr.forEach((src,i)=>{
+    const w=document.createElement('div');w.className='ptw';
+    const img=document.createElement('img');img.src=src;
+    const btn=document.createElement('button');btn.className='ptrm';btn.textContent='×';
+    btn.onclick=()=>{arr.splice(i,1);renderStrip(innerId,apbId,arr);};
+    w.appendChild(img);w.appendChild(btn);photosRow.appendChild(w);
+  });
+  if(arr.length===0)photosRow.style.display='none';else photosRow.style.display='flex';
+}
+
+function renderGrid(containerId,photos){
+  const c=document.getElementById(containerId);c.innerHTML='';
+  if(!photos?.length)return;
+  c.className='pgrid '+(photos.length===1?'one':photos.length===2?'two':'many');
+  photos.forEach(src=>{const img=document.createElement('img');img.src=src;img.alt='';img.onclick=()=>openLightbox(src);c.appendChild(img);});
+}
+
+/* ═══════════════════════════════════════════════════════
+   LIGHTBOX
+═══════════════════════════════════════════════════════ */
+function openLightbox(src){
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:400;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+  const img=document.createElement('img');img.src=src;img.style.cssText='max-width:95vw;max-height:92vh;border-radius:12px;object-fit:contain;';
+  ov.appendChild(img);ov.onclick=()=>document.body.removeChild(ov);document.body.appendChild(ov);
+}
+
+/* ═══════════════════════════════════════════════════════
+   PROMPT SYSTEM
+═══════════════════════════════════════════════════════ */
+function startPromptTimer(){
+  clearTimeout(promptTimer);promptShown=false;
+  promptTimer=setTimeout(()=>{
+    const ta=document.getElementById('ti');
+    if(!ta.value.trim()){
+      const p=PROMPTS[Math.floor(Math.random()*PROMPTS.length)];
+      document.getElementById('prompt-hint').textContent=p;
+      document.getElementById('prompt-hint').classList.add('show');
+      promptShown=true;
+    }
+  },3000);
+}
+function clearPrompt(){document.getElementById('prompt-hint').classList.remove('show');clearTimeout(promptTimer);}
+function onTextInput(ta){clearPrompt();const l=ta.value.length;document.getElementById('cc').textContent=l?l+' characters':'';}
+
+/* ═══════════════════════════════════════════════════════
+   VOICE TO TEXT
+═══════════════════════════════════════════════════════ */
+function toggleVoice(){
+  if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){showToast('Voice not supported in this browser');return;}
+  if(isRecording){recognition?.stop();return;}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  recognition=new SR();recognition.continuous=true;recognition.interimResults=true;
+  recognition.onstart=()=>{isRecording=true;document.getElementById('mic-btn').classList.add('recording');};
+  recognition.onresult=e=>{
+    let interim='',final='';
+    for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)final+=e.results[i][0].transcript;else interim+=e.results[i][0].transcript;}
+    const ta=document.getElementById('ti');
+    if(final)ta.value+=(ta.value&&!ta.value.endsWith(' ')?' ':'')+final.trim();
+    onTextInput(ta);
+  };
+  recognition.onend=()=>{isRecording=false;document.getElementById('mic-btn').classList.remove('recording');recognition=null;};
+  recognition.start();
+}
+
+/* ═══════════════════════════════════════════════════════
+   VIEW ROUTING
+═══════════════════════════════════════════════════════ */
+function showView(n){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  document.getElementById('view-'+n).classList.add('active');
+  const nb=document.getElementById('nav-'+n);if(nb)nb.classList.add('active');
+  CV=n;
+  if(n==='today')renderToday();
+  if(n==='garden')renderGarden();
+  if(n==='search'){document.getElementById('search-input').value='';renderSearchResults('');}
+}
+function goBack(){
+  if(openEntryKey)showView(openEntryKey===todayKey()?'today':'garden');
+  else showView('garden');
+}
+
+/* ═══════════════════════════════════════════════════════
+   THIS DAY LAST YEAR BANNER
+═══════════════════════════════════════════════════════ */
+function buildTDLYBanner(targetEl,isReadMode){
+  if(!targetEl)return;
+  const now=new Date();const curYear=now.getFullYear();
+  let found=null;let yearsBack=0;
+  for(let y=1;y<=5;y++){const k=fk(curYear-y,now.getMonth()+1,now.getDate());if(E[k]){found=k;yearsBack=y;break;}}
+  if(!found){targetEl.innerHTML='';return;}
+  const ent=E[found];const doo=doodleFor(found);
+  const yText=yearsBack===1?'One year ago':yearsBack+' years ago';
+  targetEl.innerHTML=`<div class="tdy-banner" onclick="openEntry('${found}')">
+    <div class="tdy-top">
+      <div class="tdy-icon">${doo.s}</div>
+      <div class="tdy-label">${yText} · ${MN[now.getMonth()]} ${now.getDate()}</div>
+    </div>
+    <div class="tdy-text">${ent.text||''}</div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════
+   TODAY VIEW
+═══════════════════════════════════════════════════════ */
+async function renderToday(){
+  const k=todayKey(),now=new Date();
+  document.getElementById('t-eyebrow').textContent=DW[now.getDay()]+', '+MN[now.getMonth()]+' '+now.getDate()+', '+now.getFullYear();
+  const doo=doodleFor(k);
+  if(E[k]){
+    assignPlantIdx(k);
+    document.getElementById('t-h1').innerHTML="Today's <em>memory</em>";
+    document.getElementById('write-mode').style.display='none';
+    document.getElementById('read-mode').style.display='block';
+    document.getElementById('rd-svg').innerHTML=doo.s;
+    document.getElementById('rd-name').textContent=doo.n;
+    const sv=new Date(E[k].savedAt||Date.now());
+    document.getElementById('rd-sub').textContent='Written at '+sv.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    const s=calcStreak();
+    document.getElementById('spill-txt').textContent=s+' day'+(s!==1?'s':'')+' in a row';
+    document.getElementById('rd-mood-pill').innerHTML=E[k].mood?moodPillHTML(E[k].mood):'';
+    document.getElementById('rd-weather-tag').innerHTML=weatherTagHTML(E[k].weather);
+    renderGrid('rd-photos',E[k].photos||[]);
+    document.getElementById('rdt').textContent=E[k].text;
+    buildTDLYBanner(document.getElementById('tdy-banner-read'),true);
+  }else{
+    document.getElementById('t-h1').innerHTML="What happened <em>today?</em>";
+    document.getElementById('write-mode').style.display='block';
+    document.getElementById('read-mode').style.display='none';
+    // Show locked flower placeholder — reveal on save
+    document.getElementById('wd-svg').innerHTML=`<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%;opacity:.35"><rect x="15" y="21" width="10" height="12" rx="3"/><path d="M17 21v-3a3 3 0 016 0v3"/><circle cx="20" cy="27" r="1.5" fill="currentColor" opacity=".5"/></svg>`;
+    document.getElementById('wd-name').textContent="Today's flower";
+    document.getElementById('wd-sub').textContent='Write a memory to unlock it';
+    document.getElementById('ti').value='';document.getElementById('cc').textContent='';
+    wPhotos=[];wMood=null;
+    renderStrip('w-pinner','w-apb',wPhotos);
+    buildMoodGrid('mood-grid',null,id=>{wMood=id;buildMoodGrid('mood-grid',id,id2=>{wMood=id2;});});
+    buildTDLYBanner(document.getElementById('tdy-banner-wrap'),false);
+    startPromptTimer();
+  }
+}
+
+async function saveEntry(){
+  const txt=document.getElementById('ti').value.trim();
+  if(!txt){showToast('Write something first');return;}
+  const k=todayKey();
+  const weather=await fetchWeather().catch(()=>null);
+  E[k]={text:txt,photos:[...wPhotos],mood:wMood,weather,savedAt:Date.now(),createdAt:Date.now()};
+  save_();
+  assignPlantIdx(k);
+  const s=calcStreak();checkMilestone(s);
+  // Show plant reveal
+  const doo=doodleFor(k);
+  showPlantReveal(doo);
+}
+
+/* ═══════════════════════════════════════════════════════
+   MILESTONES
+═══════════════════════════════════════════════════════ */
+const MILESTONES=[7,30,50,100,200,365];
+function checkMilestone(streak){
+  const seen=new Set(JSON.parse(localStorage.getItem('tg_milestones')||'[]'));
+  const hit=MILESTONES.find(m=>streak===m&&!seen.has(m));
+  if(!hit)return;seen.add(hit);localStorage.setItem('tg_milestones',JSON.stringify([...seen]));
+  showMilestone(hit,streak);
+}
+function showMilestone(n,streak){
+  document.getElementById('mil-num').textContent=n;
+  document.getElementById('mil-label').textContent=n+' days growing';
+  document.getElementById('mil-sub').textContent=`You've written ${Object.keys(E).length} memories. Keep planting.`;
+  const pp=document.getElementById('mil-plants');pp.innerHTML='';
+  for(let i=0;i<5;i++){const idx=Math.floor(Math.random()*(D.length-12));const s=document.createElement('div');s.innerHTML=D[idx].s;s.style.animationDelay=i*.1+'s';pp.appendChild(s);}
+  document.getElementById('milestone-ov').classList.add('show');
+}
+function closeMilestone(){document.getElementById('milestone-ov').classList.remove('show');}
+function showPlantReveal(doo){
+  const svgWrap=document.getElementById('plant-reveal-svg');
+  svgWrap.innerHTML=doo.s;
+  const svgEl=svgWrap.querySelector('svg');
+  if(svgEl){
+    svgEl.style.cssText='width:100%;height:100%;';
+    // Force white strokes so it's always visible on dark overlay
+    svgEl.setAttribute('stroke','#f0eeff');
+    svgEl.setAttribute('color','#f0eeff');
+    svgEl.querySelectorAll('[stroke]').forEach(el=>{if(el.getAttribute('stroke')==='currentColor'||!el.getAttribute('stroke'))el.setAttribute('stroke','#f0eeff');});
+    svgEl.querySelectorAll('[fill]').forEach(el=>{const f=el.getAttribute('fill');if(f==='currentColor')el.setAttribute('fill','rgba(240,238,255,0.22)');});
+  }
+  document.getElementById('plant-reveal-name').textContent=doo.n;
+  document.getElementById('plant-reveal-desc').textContent=getPlantDesc(doo.n);
+  document.getElementById('plant-reveal-ov').classList.add('show');
+}
+function closePlantReveal(){
+  document.getElementById('plant-reveal-ov').classList.remove('show');
+  if(CV==='entry')openEntry(openEntryKey||todayKey());
+  else{renderGarden();showView('garden');}
+}
+function renderMilestoneList(){
+  const seen=new Set(JSON.parse(localStorage.getItem('tg_milestones')||'[]'));
+  const el=document.getElementById('milestones-list');el.innerHTML='';
+  MILESTONES.forEach(m=>{
+    const row=document.createElement('div');row.className='settings-row';
+    row.innerHTML=`<div><div class="settings-row-label">${m} Day${m>1?'s':''} ${seen.has(m)?'✦':''}</div></div><div style="font-size:12px;color:var(--muted)">${seen.has(m)?'Unlocked':'Locked'}</div>`;
+    el.appendChild(row);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   GARDEN VIEW
+═══════════════════════════════════════════════════════ */
+function renderGarden(){
+  document.getElementById('ylbl').textContent=gy;
+  const tstr=todayKey(),today=new Date();
+  const yk=Object.keys(E).filter(k=>k.startsWith(gy+'-'));
+  const tot=yk.length,str=calcStreak(),pct=Math.round(tot/diy(gy)*100);
+  document.getElementById('st').textContent=tot;document.getElementById('ss').textContent=str;document.getElementById('sp2').textContent=pct+'%';
+  document.getElementById('gcnt').textContent=tot+' memor'+(tot===1?'y':'ies')+' planted';
+  const con=document.getElementById('gm');con.innerHTML='';
+  for(let m=0;m<12;m++){
+    const blk=document.createElement('div');blk.className='mb';
+    const lbl=document.createElement('div');lbl.className='mn';lbl.textContent=MN[m];blk.appendChild(lbl);
+    const g=document.createElement('div');g.className='dg';
+    const dim=new Date(gy,m+1,0).getDate(),fdow=new Date(gy,m,1).getDay();
+    for(let i=0;i<fdow;i++){const e=document.createElement('div');e.className='dc mt';g.appendChild(e);}
+    for(let d=1;d<=dim;d++){
+      const k=fk(gy,m+1,d);const c=document.createElement('div');c.className='dc';
+      const cd=new Date(gy,m,d);const isTdy=k===tstr,isFut=cd>today&&!isTdy,has=!!E[k];
+      if(isFut){c.classList.add('future');const dd=document.createElement('div');dd.className='dd';c.appendChild(dd);}
+      else if(has){
+        const doo=doodleFor(k);c.classList.add('filled');
+        c.innerHTML=doo.s;c.style.animationDelay=(d*.01)+'s';
+        c.title=doo.n;c.onclick=()=>openEntry(k);
+        // tint cell by mood color if available
+        if(E[k].mood){const md=MOODS.find(x=>x.id===E[k].mood);if(md)c.style.background=md.color+'28';}
+      }else{
+        c.classList.add('blank');if(isTdy)c.classList.add('tdc');
+        const dd=document.createElement('div');dd.className='dd';c.appendChild(dd);
+        if(isTdy){
+          c.onclick=()=>showView('today');
+        } else {
+          // Past blank — allow adding an entry
+          c.classList.add('blank-past');
+          c.title='Add entry for '+MN[m]+' '+d;
+          c.onclick=()=>openAddEntryForDate(k);
+        }
+      }
+      g.appendChild(c);
+    }
+    blk.appendChild(g);con.appendChild(blk);
+  }
+}
+function chYear(d){gy+=d;renderGarden();}
+function openAddEntryForDate(k){
+  // Use the existing edit modal — it handles both create and update via etk
+  openEditModal(k);
+}
+
+/* ═══════════════════════════════════════════════════════
+   ENTRY VIEW
+═══════════════════════════════════════════════════════ */
+function openEntry(k){
+  openEntryKey=k;const{y,m,d,date}=pk(k);const ent=E[k];
+  document.getElementById('e-dow').textContent=DW[date.getDay()];
+  document.getElementById('e-day').textContent=MN[m-1]+' '+d;
+  document.getElementById('e-yr').textContent=y;
+  const doo=doodleFor(k);
+  document.getElementById('e-doodle').innerHTML=doo.s;
+  document.querySelector('#e-doodle svg').style.cssText='width:100%;height:100%;';
+  document.getElementById('e-dlbl').textContent=doo.n;
+  document.getElementById('e-mood-pill').innerHTML=ent.mood?moodPillHTML(ent.mood):'';
+  document.getElementById('e-weather-tag').innerHTML=weatherTagHTML(ent.weather);
+  renderGrid('e-photos',ent.photos||[]);
+  document.getElementById('e-text').textContent=ent.text;
+  // Pressed flower aging: dim doodle based on age
+  const ageYears=(Date.now()-(ent.createdAt||Date.now()))/(1000*60*60*24*365);
+  const aged=Math.min(ageYears/3,.7);
+  document.querySelector('#e-doodle svg').style.opacity=(1-aged*.6)+'';
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  document.getElementById('view-entry').classList.add('active');CV='entry';
+}
+function editFromView(){openEditModal(openEntryKey);}
+function delFromView(){
+  if(!confirm('Delete this memory?'))return;
+  delete E[openEntryKey];save_();showToast('Memory deleted');goBack();
+}
+
+/* ═══════════════════════════════════════════════════════
+   EDIT MODAL
+═══════════════════════════════════════════════════════ */
+function openEditModal(k){
+  etk=k;const{y,m,d}=pk(k);
+  const isNew=!E[k];
+  document.getElementById('m-dlbl').textContent=(isNew?'Add memory — ':'Edit — ')+MN[m-1]+' '+d+', '+y;
+  const ent=E[k]||{};
+  document.getElementById('mta2').value=ent.text||'';
+  document.getElementById('mta2').placeholder=isNew?'What do you remember about this day?':'Write your memory…';
+  mPhotos=[...(ent.photos||[])];mMood=ent.mood||null;
+  renderStrip('m-pinner','m-apb',mPhotos);
+  document.getElementById('emod').classList.add('open');
+}
+function closeModal(){document.getElementById('emod').classList.remove('open');}
+function modOvClick(e){if(e.target===document.getElementById('emod'))closeModal();}
+function saveModal(){
+  const txt=document.getElementById('mta2').value.trim();
+  if(!txt){showToast('Write something first');return;}
+  const isNew=!E[etk];
+  const prev=E[etk]||{};
+  E[etk]={...prev,text:txt,photos:[...mPhotos],mood:mMood,savedAt:Date.now(),createdAt:prev.createdAt||Date.now()};
+  save_();
+  assignPlantIdx(etk);
+  closeModal();
+  if(isNew){
+    const doo=doodleFor(etk);
+    showPlantReveal(doo);
+  } else {
+    showToast('Saved');
+    if(etk===todayKey())renderToday();
+    if(CV==='garden')renderGarden();
+    if(CV==='entry')openEntry(etk);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   SEARCH
+═══════════════════════════════════════════════════════ */
+function doSearch(q){
+  q=q.trim().toLowerCase();renderSearchResults(q);
+}
+function renderSearchResults(q){
+  const con=document.getElementById('search-results');
+  if(!q){con.innerHTML=`<div class="search-empty"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="20" y1="38" x2="20" y2="14"/><path d="M20 22C20 22 11 19 10 11Q14 4 20 8"/><path d="M20 18C20 18 29 15 30 7Q26 1 20 5"/></svg><div style="font-family:'Instrument Serif',serif;font-style:italic;opacity:.6;font-size:15px">Your memories live here</div></div>`;return;}
+  const keys=Object.keys(E).sort().reverse();
+  const results=keys.filter(k=>{const e=E[k];return(e.text||'').toLowerCase().includes(q)||(e.mood||'').includes(q)||(DW[(new Date(k.replace(/-/g,'/'))).getDay()]||'').toLowerCase().includes(q)||(MN[parseInt(k.split('-')[1])-1]||'').toLowerCase().includes(q);});
+  if(!results.length){con.innerHTML=`<div class="search-empty"><div style="font-size:32px;margin-bottom:12px;opacity:.4">${doodleFor('2020-01-01').s}</div><div style="font-size:14px;opacity:.5">No memories found for "<em>${q}</em>"</div></div>`;return;}
+  con.innerHTML='';
+  results.forEach(k=>{
+    const e=E[k];const{y,m,d,date}=pk(k);const doo=doodleFor(k);
+    const card=document.createElement('div');card.className='search-card';
+    const txt=e.text||'';const hi=txt.replace(new RegExp(`(${q})`,'gi'),'<mark style="background:rgba(255,220,80,.3);border-radius:2px">$1</mark>');
+    const moodMd=e.mood?MOODS.find(x=>x.id===e.mood):null;
+    card.innerHTML=`<div class="search-doodle">${doo.s}</div><div style="flex:1;min-width:0"><div class="search-meta">${DW[date.getDay()]}, ${MN[m-1]} ${d}, ${y}</div><div class="search-text">${hi}</div>${moodMd?`<div class="search-mood">${moodMd.label}</div>`:''}</div>`;
+    card.onclick=()=>openEntry(k);con.appendChild(card);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   SURPRISE ME
+═══════════════════════════════════════════════════════ */
+function surpriseMe(){
+  const keys=Object.keys(E);if(!keys.length){showToast('Plant some memories first');return;}
+  const k=keys[Math.floor(Math.random()*keys.length)];openEntry(k);
+}
+
+/* ═══════════════════════════════════════════════════════
+   STREAK
+═══════════════════════════════════════════════════════ */
+function calcStreak(){
+  let s=0;const d=new Date();
+  if(!E[todayKey()])d.setDate(d.getDate()-1);
+  while(true){const k=fk(d.getFullYear(),d.getMonth()+1,d.getDate());if(!E[k])break;s++;d.setDate(d.getDate()-1);}
+  return s;
+}
+
+/* ═══════════════════════════════════════════════════════
+   YEAR IN REVIEW
+═══════════════════════════════════════════════════════ */
+function openYearReview(){
+  closeSettings();
+  const yr=new Date().getFullYear();
+  const yk=Object.keys(E).filter(k=>k.startsWith(yr+'-'));
+  const tot=yk.length;
+  const str=calcStreak();
+  // monthly counts
+  const monthly=Array(12).fill(0);yk.forEach(k=>monthly[parseInt(k.split('-')[1])-1]++);
+  const maxM=Math.max(...monthly,1);
+  // mood tally
+  const moodTally={};yk.forEach(k=>{const m=E[k].mood;if(m)moodTally[m]=(moodTally[m]||0)+1;});
+  // word count
+  const totalWords=yk.reduce((s,k)=>s+(E[k].text?.split(/\s+/).filter(Boolean).length||0),0);
+  // total photos
+  const totalPhotos=yk.reduce((s,k)=>s+(E[k].photos?.length||0),0);
+  const body=document.getElementById('review-body');
+  body.innerHTML=`
+    <div class="yr-stat-grid">
+      <div class="yr-stat"><div class="yr-stat-num">${tot}</div><div class="yr-stat-lbl">Memories</div></div>
+      <div class="yr-stat"><div class="yr-stat-num">${str}</div><div class="yr-stat-lbl">Current streak</div></div>
+      <div class="yr-stat"><div class="yr-stat-num">${totalWords.toLocaleString()}</div><div class="yr-stat-lbl">Words written</div></div>
+      <div class="yr-stat"><div class="yr-stat-num">${totalPhotos}</div><div class="yr-stat-lbl">Photos</div></div>
+    </div>
+    <div class="yr-section-label">By Month</div>
+    <div class="yr-monthly">${monthly.map((c,i)=>`<div class="yr-month-bar-wrap"><div class="yr-month-name">${MNS[i]}</div><div class="yr-month-bar-bg"><div class="yr-month-bar" style="width:${Math.round(c/maxM*100)}%"></div></div><div class="yr-month-count">${c}</div></div>`).join('')}</div>
+    ${Object.keys(moodTally).length?`<div class="yr-section-label">Moods</div><div class="yr-mood-row">${Object.entries(moodTally).sort((a,b)=>b[1]-a[1]).map(([id,cnt])=>{const m=MOODS.find(x=>x.id===id);return m?`<div class="yr-mood-item">${m.s}<span>${m.label}</span><span style="font-weight:600">${cnt}</span></div>`:''}).join('')}</div>`:''}
+  `;
+  // animate bars
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{}));
+  document.getElementById('sv-review').classList.add('open');
+}
+
+/* ═══════════════════════════════════════════════════════
+   EMOTIONAL ARC
+═══════════════════════════════════════════════════════ */
+function openArc(){
+  closeSettings();
+  const keys=Object.keys(E).sort();
+  // bucket into weeks
+  const weeks=[];let bucket=null;
+  keys.forEach(k=>{
+    const d=new Date(k.replace(/-/g,'/'));const w=Math.floor(d.getTime()/(7*24*3600*1000));
+    if(!bucket||bucket.w!==w){if(bucket)weeks.push(bucket);bucket={w,moods:{},date:k};}
+    if(E[k].mood)bucket.moods[E[k].mood]=(bucket.moods[E[k].mood]||0)+1;
+  });
+  if(bucket)weeks.push(bucket);
+  // draw
+  const cv=document.getElementById('arc-canvas');
+  const W=cv.offsetWidth||300;cv.width=W*2;cv.height=200;cv.style.height='100px';
+  const cx=cv.getContext('2d');cx.scale(2,2);
+  const pw=W,ph=100;cx.clearRect(0,0,pw,ph);
+  const moodOrder=MOODS.map(m=>m.id);
+  const moodY={};MOODS.forEach((m,i)=>{moodY[m.id]=10+(i/MOODS.length)*(ph-20);});
+  if(weeks.length>1){
+    weeks.forEach((w,i)=>{
+      const x=10+(i/(weeks.length-1))*(pw-20);
+      const topMood=Object.entries(w.moods).sort((a,b)=>b[1]-a[1])[0];
+      if(!topMood)return;
+      const y=moodY[topMood[0]]||ph/2;
+      const m=MOODS.find(x=>x.id===topMood[0]);
+      cx.beginPath();cx.arc(x,y,5,0,Math.PI*2);
+      cx.fillStyle=(m?.color||'rgba(255,255,255,.5)')+'cc';cx.fill();
+      if(i>0){
+        const prev=weeks.slice(0,i).reverse().find(ww=>Object.keys(ww.moods).length);
+        if(prev){
+          const pi=weeks.indexOf(prev);const px2=10+(pi/(weeks.length-1))*(pw-20);
+          const pm=Object.entries(prev.moods).sort((a,b)=>b[1]-a[1])[0];
+          const py=moodY[pm[0]]||ph/2;
+          cx.beginPath();cx.moveTo(px2,py);cx.lineTo(x,y);
+          cx.strokeStyle=m?.color||'rgba(255,255,255,.3)';cx.lineWidth=1.5;cx.globalAlpha=.5;cx.stroke();cx.globalAlpha=1;
+        }
+      }
+    });
+  }else{cx.fillStyle='rgba(255,255,255,.3)';cx.font='14px sans-serif';cx.textAlign='center';cx.fillText('Write more entries to see your arc',pw/2,ph/2);}
+  // legend
+  const leg=document.getElementById('arc-legend');leg.innerHTML='';
+  MOODS.forEach(m=>{const d=document.createElement('div');d.className='arc-leg-item';d.innerHTML=m.s+`<span>${m.label}</span>`;leg.appendChild(d);});
+  document.getElementById('sv-arc').classList.add('open');
+}
+
+/* ═══════════════════════════════════════════════════════
+   YEAR WALK
+═══════════════════════════════════════════════════════ */
+function openYearWalk(){
+  const yr=gy;const keys=Object.keys(E).filter(k=>k.startsWith(yr+'-')).sort();
+  if(!keys.length){showToast('No memories this year yet');return;}
+  document.getElementById('walk-title').textContent=yr+' · Year Walk';
+  const body=document.getElementById('walk-body');body.innerHTML='';
+  keys.forEach((k,i)=>{
+    const e=E[k];const{y,m,d,date}=pk(k);const doo=doodleFor(k);
+    const sec=document.createElement('div');sec.className='walk-entry';
+    sec.innerHTML=`
+      <div class="walk-date">${DW[date.getDay()].toUpperCase()} · ${MN[m-1].toUpperCase()} ${d}</div>
+      <div class="walk-doodle">${doo.s}</div>
+      <div class="walk-text">${e.text||''}</div>
+      ${e.photos?.length?`<div class="walk-photos">${e.photos.map(src=>`<img src="${src}" alt="" onclick="openLightbox('${src}')">`).join('')}</div>`:''}
+    `;
+    body.appendChild(sec);
+    if(i<keys.length-1){const div=document.createElement('div');div.className='walk-divider';body.appendChild(div);}
+  });
+  const prog=document.getElementById('walk-progress');prog.textContent=`1 / ${keys.length}`;
+  // scroll progress
+  body.onscroll=()=>{
+    const sections=body.querySelectorAll('.walk-entry');let cur=0;
+    sections.forEach((s,i)=>{if(s.getBoundingClientRect().top<window.innerHeight*.6)cur=i+1;});
+    prog.textContent=`${Math.min(cur,keys.length)} / ${keys.length}`;
+  };
+  document.getElementById('sv-walk').classList.add('open');
+}
+
+/* ═══════════════════════════════════════════════════════
+   SUB-VIEW CLOSE
+═══════════════════════════════════════════════════════ */
+function closeSV(id){document.getElementById(id).classList.remove('open');}
+
+/* ═══════════════════════════════════════════════════════
+   SHARE CARD
+═══════════════════════════════════════════════════════ */
+function openShareSheet(k){
+  currentShareKey=k;
+  buildShareCard(k);
+  document.getElementById('share-sheet').classList.add('open');
+}
+function closeShareSheet(){document.getElementById('share-sheet').classList.remove('open');}
+function shareOvClick(e){if(e.target===document.getElementById('share-sheet'))closeShareSheet();}
+
+function buildShareCard(k){
+  const e=E[k];if(!e)return;
+  const{y,m,d}=pk(k);const doo=doodleFor(k);
+  const cv=document.getElementById('share-canvas');
+  const S2=2;const W=Math.min(380,window.innerWidth-64);const H=W*1.4;
+  cv.width=W*S2;cv.height=H*S2;cv.style.width=W+'px';cv.style.height=H+'px';
+  const cx=cv.getContext('2d');cx.scale(S2,S2);
+  // bg
+  const bg=cx.createLinearGradient(0,0,W,H);
+  const pal=S.pal||'default';
+  const palColors={default:['#1a00ff','#0d00aa'],forest:['#1a5c2a','#124020'],terra:['#8b2e0a','#6b2208'],indigo:['#2d1166','#200c4d'],midnight:['#0d0d1a','#05050f']};
+  const [c1,c2]=palColors[pal]||palColors.default;
+  bg.addColorStop(0,c1);bg.addColorStop(1,c2);
+  cx.fillStyle=bg;cx.beginPath();if(cx.roundRect)cx.roundRect(0,0,W,H,18);else cx.rect(0,0,W,H);cx.fill();
+  // subtle gradient overlay
+  const ov=cx.createRadialGradient(W*.3,H*.2,10,W*.3,H*.2,W*.8);
+  ov.addColorStop(0,'rgba(100,60,255,.3)');ov.addColorStop(1,'rgba(0,0,0,0)');
+  cx.fillStyle=ov;cx.fillRect(0,0,W,H);
+  // header
+  cx.fillStyle='rgba(255,255,255,.6)';cx.font=`500 11px 'DM Sans',sans-serif`;cx.textAlign='left';
+  cx.fillText('THOUGHT GARDEN',24,36);
+  cx.fillStyle='rgba(255,255,255,.4)';cx.font=`12px 'DM Sans',sans-serif`;
+  cx.fillText(DW[(new Date(k.replace(/-/g,'/'))).getDay()].toUpperCase()+' · '+MN[m-1].toUpperCase()+' '+d+', '+y,24,54);
+  // date large
+  cx.fillStyle='rgba(255,255,255,.92)';cx.font=`400 36px 'Georgia',serif`;cx.textAlign='center';
+  cx.fillText(MN[m-1]+' '+d,W/2,H/2-20);
+  cx.fillStyle='rgba(255,255,255,.55)';cx.font=`italic 28px 'Georgia',serif`;
+  cx.fillText(String(y),W/2,H/2+16);
+  // text excerpt
+  const excerpt=(e.text||'').substring(0,120)+(e.text?.length>120?'…':'');
+  cx.fillStyle='rgba(255,255,255,.82)';cx.font=`300 14px 'DM Sans',sans-serif`;cx.textAlign='center';
+  const words=excerpt.split(' ');let line='';let ty=H/2+58;
+  words.forEach(w=>{const test=line?line+' '+w:w;if(cx.measureText(test).width>W-60){cx.fillText(line,W/2,ty);line=w;ty+=22;}else line=test;});
+  if(line)cx.fillText(line,W/2,ty);
+  // bottom plant doodle
+  const tempSVG=new Image();const svgBlob=new Blob([doo.s.replace('currentColor','rgba(255,255,255,0.7)')],{type:'image/svg+xml'});
+  const url=URL.createObjectURL(svgBlob);tempSVG.onload=()=>{cx.drawImage(tempSVG,W/2-24,H-70,48,48);URL.revokeObjectURL(url);};
+  tempSVG.src=url;
+}
+
+function downloadShareCard(){
+  const cv=document.getElementById('share-canvas');
+  const a=document.createElement('a');a.download='thought-garden-memory.png';a.href=cv.toDataURL('image/png');a.click();
+}
+async function nativeShare(){
+  const cv=document.getElementById('share-canvas');
+  if(!navigator.share){downloadShareCard();return;}
+  cv.toBlob(async blob=>{
+    try{await navigator.share({title:'Thought Garden',text:'A memory from my garden.',files:[new File([blob],'memory.png',{type:'image/png'})]});}
+    catch(e){downloadShareCard();}
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   EXPORT
+═══════════════════════════════════════════════════════ */
+function exportData(){
+  const payload={entries:E,settings:S,exportedAt:new Date().toISOString(),version:'thought-garden-v2'};
+  const json=JSON.stringify(payload,null,2);
+  const blob=new Blob([json],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='thought-garden-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();
+  showToast('Exported ✓');
+}
+
+function triggerImport(){
+  document.getElementById('import-file-input').click();
+}
+
+function handleImportFile(ev){
+  const file=ev.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      // Support both wrapped {entries,settings} and raw entries format
+      const imported=data.entries||data;
+      let count=0;
+      Object.keys(imported).forEach(k=>{
+        if(/^\d{4}-\d{2}-\d{2}$/.test(k)&&imported[k]&&typeof imported[k]==='object'){
+          E[k]=imported[k];count++;
+        }
+      });
+      save_();
+      if(data.settings){}// preserve user's current settings
+      renderToday();renderGarden();
+      showToast('Imported '+count+' memor'+(count===1?'y':'ies')+' ✓');
+    }catch(err){
+      showToast('Could not read file');
+    }
+    ev.target.value='';
+  };
+  reader.readAsText(file);
+}
+
+function confirmClearAll(){
+  document.getElementById('clear-confirm-ov').classList.add('show');
+}
+
+function executeClrAll(){
+  E={};save_();
+  document.getElementById('clear-confirm-ov').classList.remove('show');
+  renderToday();renderGarden();
+  showToast('Garden cleared');
+}
+
+/* ═══════════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════════ */
+let tt;
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+/* ═══════════════════════════════════════════════════════
+   SEASONAL NIGHT MODE CHECK
+═══════════════════════════════════════════════════════ */
+function getSeasonClass(){
+  const m=new Date().getMonth();
+  if(m>=2&&m<=4)return'spring';if(m>=5&&m<=7)return'summer';if(m>=8&&m<=10)return'autumn';return'winter';
+}
+// Subtle seasonal hue shift to liquid blobs (no CSS change needed — blobs auto-adapt)
+
+/* ═══════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════
+   GARDEN CRITTERS (handdrawn glassy butterflies + fireflies)
+═══════════════════════════════════════════════════════ */
+(function spawnCritters(){
+  const container=document.getElementById('garden-critters');
+
+  // Handdrawn glassy butterfly - loose, sketchy strokes, transparent fills
+  const BUTTERFLIES=[
+    // Butterfly A - classic round wings, sketchy
+    `<svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M22 24 C18 18 10 12 5 16 C1 20 4 27 9 26 C14 25 19 24 22 24Z" fill="rgba(180,200,255,0.18)" stroke="rgba(200,220,255,0.7)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M22 24 C26 18 34 12 39 16 C43 20 40 27 35 26 C30 25 25 24 22 24Z" fill="rgba(180,200,255,0.18)" stroke="rgba(200,220,255,0.7)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M22 24 C19 27 14 31 12 35 C15 37 18 33 21 29 C21.5 27 22 24 22 24Z" fill="rgba(180,200,255,0.12)" stroke="rgba(200,220,255,0.55)" stroke-width="1.1" stroke-linecap="round"/>
+      <path d="M22 24 C25 27 30 31 32 35 C29 37 26 33 23 29 C22.5 27 22 24 22 24Z" fill="rgba(180,200,255,0.12)" stroke="rgba(200,220,255,0.55)" stroke-width="1.1" stroke-linecap="round"/>
+      <path d="M22 24 C21 21 21 18 22 14" stroke="rgba(255,255,255,0.5)" stroke-width="1" stroke-linecap="round"/>
+      <path d="M22 14 C20 11 18 10 17 9" stroke="rgba(255,255,255,0.45)" stroke-width="0.9" stroke-linecap="round"/>
+      <path d="M22 14 C24 11 26 10 27 9" stroke="rgba(255,255,255,0.45)" stroke-width="0.9" stroke-linecap="round"/>
+      <path d="M8 18 Q10 15 13 17" stroke="rgba(200,220,255,0.4)" stroke-width="0.8" fill="none"/>
+      <path d="M30 18 Q34 15 36 18" stroke="rgba(200,220,255,0.4)" stroke-width="0.8" fill="none"/>
+    </svg>`,
+    // Butterfly B - more angular, moth-like
+    `<svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M22 23 C16 15 7 10 4 15 C2 19 6 25 12 24 C16 23 20 23 22 23Z" fill="rgba(200,230,180,0.15)" stroke="rgba(200,240,160,0.65)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M22 23 C28 15 37 10 40 15 C42 19 38 25 32 24 C28 23 24 23 22 23Z" fill="rgba(200,230,180,0.15)" stroke="rgba(200,240,160,0.65)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M22 23 C20 27 16 32 14 36 C17 37 20 32 22 28 L22 23Z" fill="rgba(200,230,180,0.1)" stroke="rgba(200,240,160,0.5)" stroke-width="1" stroke-linecap="round"/>
+      <path d="M22 23 C24 27 28 32 30 36 C27 37 24 32 22 28 L22 23Z" fill="rgba(200,230,180,0.1)" stroke="rgba(200,240,160,0.5)" stroke-width="1" stroke-linecap="round"/>
+      <line x1="22" y1="23" x2="21" y2="13" stroke="rgba(255,255,255,0.45)" stroke-width="0.9" stroke-linecap="round"/>
+      <line x1="22" y1="23" x2="23" y2="13" stroke="rgba(255,255,255,0.45)" stroke-width="0.9" stroke-linecap="round"/>
+      <path d="M6 17 Q9 14 11 17" stroke="rgba(200,240,160,0.38)" stroke-width="0.8" fill="none"/>
+    </svg>`,
+    // Butterfly C - delicate, wispy
+    `<svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M21 22 C15 13 5 9 3 14 C1 18 5 24 11 23 C16 22 19 22 21 22Z" fill="rgba(255,210,230,0.16)" stroke="rgba(255,200,220,0.6)" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M21 22 C27 13 37 9 39 14 C41 18 37 24 31 23 C26 22 23 22 21 22Z" fill="rgba(255,210,230,0.16)" stroke="rgba(255,200,220,0.6)" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M21 22 C18 26 13 31 11 35 C14 36 17 31 20 27 L21 22Z" fill="rgba(255,210,230,0.1)" stroke="rgba(255,200,220,0.48)" stroke-width="1" stroke-linecap="round"/>
+      <path d="M21 22 C24 26 29 31 31 35 C28 36 25 31 22 27 L21 22Z" fill="rgba(255,210,230,0.1)" stroke="rgba(255,200,220,0.48)" stroke-width="1" stroke-linecap="round"/>
+      <path d="M21 22 C20.5 18 20.5 15 21 12" stroke="rgba(255,255,255,0.42)" stroke-width="0.9" stroke-linecap="round"/>
+      <path d="M21 12 C19.5 9.5 18 9 17 8.5" stroke="rgba(255,255,255,0.4)" stroke-width="0.85" stroke-linecap="round"/>
+      <path d="M21 12 C22.5 9.5 24 9 25 8.5" stroke="rgba(255,255,255,0.4)" stroke-width="0.85" stroke-linecap="round"/>
+    </svg>`
+  ];
+
+  // Handdrawn glassy firefly - little bug shape, glows in dark
+  const FIREFLIES=[
+    // Firefly A - oval body, wing hints
+    `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="12" cy="13" rx="3.5" ry="5" fill="rgba(200,255,80,0.22)" stroke="rgba(180,255,60,0.75)" stroke-width="1"/>
+      <ellipse cx="12" cy="10" rx="2.2" ry="2.8" fill="rgba(220,255,120,0.3)" stroke="rgba(200,255,80,0.7)" stroke-width="0.9"/>
+      <path d="M12 8 C10 5 8 4 7 5" stroke="rgba(180,255,60,0.55)" stroke-width="0.85" stroke-linecap="round" fill="none"/>
+      <path d="M12 8 C14 5 16 4 17 5" stroke="rgba(180,255,60,0.55)" stroke-width="0.85" stroke-linecap="round" fill="none"/>
+      <path d="M9.5 16 C8 18 8 19.5 9 20" stroke="rgba(180,255,60,0.5)" stroke-width="0.8" stroke-linecap="round" fill="none"/>
+      <path d="M14.5 16 C16 18 16 19.5 15 20" stroke="rgba(180,255,60,0.5)" stroke-width="0.8" stroke-linecap="round" fill="none"/>
+      <circle cx="12" cy="11" r="1.2" fill="rgba(230,255,100,0.5)"/>
+    </svg>`,
+    // Firefly B - rounder, simpler
+    `<svg viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="11" cy="13" rx="3" ry="4.5" fill="rgba(180,255,70,0.2)" stroke="rgba(160,255,50,0.72)" stroke-width="1"/>
+      <circle cx="11" cy="9.5" r="2.5" fill="rgba(210,255,100,0.28)" stroke="rgba(190,255,70,0.68)" stroke-width="0.9"/>
+      <path d="M11 7 C9.5 4.5 8 4 7 4.5" stroke="rgba(170,255,50,0.5)" stroke-width="0.8" stroke-linecap="round" fill="none"/>
+      <path d="M11 7 C12.5 4.5 14 4 15 4.5" stroke="rgba(170,255,50,0.5)" stroke-width="0.8" stroke-linecap="round" fill="none"/>
+      <path d="M9 15.5 C7.5 17.5 7.5 19 8.5 19.5" stroke="rgba(160,255,50,0.45)" stroke-width="0.75" stroke-linecap="round" fill="none"/>
+      <path d="M13 15.5 C14.5 17.5 14.5 19 13.5 19.5" stroke="rgba(160,255,50,0.45)" stroke-width="0.75" stroke-linecap="round" fill="none"/>
+      <circle cx="11" cy="10" r="1" fill="rgba(230,255,90,0.55)"/>
+    </svg>`
+  ];
+
+  const critters=[];
+  function rand(a,b){return a+Math.random()*(b-a);}
+
+  function spawnButterfly(){
+    const el=document.createElement('div');
+    el.className='critter butterfly';
+    const sz=rand(28,46);
+    const svgStr=BUTTERFLIES[Math.floor(Math.random()*BUTTERFLIES.length)];
+    el.innerHTML=svgStr;
+    el.querySelector('svg').style.cssText=`width:${sz}px;height:${sz}px;`;
+    el.style.cssText=`position:absolute;will-change:transform;opacity:${rand(.55,.9)};`;
+    container.appendChild(el);
+    const c={el,x:rand(3,92),y:rand(8,78),vx:rand(.025,.075)*(Math.random()<.5?1:-1),vy:rand(.015,.055)*(Math.random()<.5?1:-1),wobbleX:rand(.4,1.2),wobbleY:rand(.3,1.0),wobbleSpeedX:rand(.0004,.001),wobbleSpeedY:rand(.0003,.0009),phase:rand(0,Math.PI*2),type:'butterfly'};
+    critters.push(c);
+  }
+
+  function spawnFirefly(){
+    const el=document.createElement('div');
+    el.className='critter firefly';
+    const sz=rand(16,26);
+    const svgStr=FIREFLIES[Math.floor(Math.random()*FIREFLIES.length)];
+    el.innerHTML=svgStr;
+    const svgEl=el.querySelector('svg');
+    svgEl.style.cssText=`width:${sz}px;height:${sz}px;animation-delay:${rand(0,3)}s;`;
+    el.style.cssText=`position:absolute;will-change:transform;`;
+    container.appendChild(el);
+    const c={el,x:rand(4,93),y:rand(8,85),vx:rand(.012,.04)*(Math.random()<.5?1:-1),vy:rand(.008,.032)*(Math.random()<.5?1:-1),wobbleX:rand(.25,.75),wobbleY:rand(.2,.65),wobbleSpeedX:rand(.0002,.0007),wobbleSpeedY:rand(.0002,.0006),phase:rand(0,Math.PI*2),type:'firefly'};
+    critters.push(c);
+  }
+
+  for(let i=0;i<8;i++)spawnButterfly();
+  for(let i=0;i<12;i++)spawnFirefly();
+
+  let t=0;
+  function animate(){
+    t++;
+    critters.forEach(c=>{
+      c.x+=c.vx+Math.sin(t*c.wobbleSpeedX+c.phase)*0.055;
+      c.y+=c.vy+Math.cos(t*c.wobbleSpeedY+c.phase*1.3)*0.045;
+      if(c.x<-6)c.x=103;if(c.x>106)c.x=-4;
+      if(c.y<-6)c.y=96;if(c.y>101)c.y=-4;
+      c.el.style.left=c.x+'%';
+      c.el.style.top=c.y+'%';
+    });
+    requestAnimationFrame(animate);
+  }
+  animate();
+})();
+renderToday();
+document.getElementById('nav-search').addEventListener('click',()=>{setTimeout(()=>document.getElementById('search-input')?.focus(),350);});
+</script>
+
+</body>
+</html>
+ 
