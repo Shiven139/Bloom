@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
-<title>Thought Garden</title>
+<title>Bloom</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Thought Garden">
+<meta name="apple-mobile-web-app-title" content="Bloom">
 <meta name="theme-color" content="#1200cc">
 <link rel="apple-touch-icon" id="ati" href="">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Instrument+Serif:ital@0;1&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
@@ -398,7 +398,7 @@ body:not([data-night="1"]) .firefly{display:none!important;}
     <div class="appbar">
       <div class="appbar-logo">
         <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="33" x2="18" y2="14"/><path d="M18 22C18 22 10 19 9 12Q13 5 18 9"/><path d="M18 18C18 18 26 14 28 7Q24 1 18 5"/><path d="M15 33Q12 31 10 33"/></svg>
-        <span class="appbar-name">Thought Garden</span>
+        <span class="appbar-name">Bloom</span>
       </div>
       <div class="appbar-btns">
         <button class="icon-btn" id="settings-btn" onclick="openSettings()" title="Settings">
@@ -1735,7 +1735,7 @@ function buildShareCard(k){
   cx.fillStyle=ov;cx.fillRect(0,0,W,H);
   // header
   cx.fillStyle='rgba(255,255,255,.6)';cx.font=`500 11px 'DM Sans',sans-serif`;cx.textAlign='left';
-  cx.fillText('THOUGHT GARDEN',24,36);
+  cx.fillText('BLOOM',24,36);
   cx.fillStyle='rgba(255,255,255,.4)';cx.font=`12px 'DM Sans',sans-serif`;
   cx.fillText(DW[(new Date(k.replace(/-/g,'/'))).getDay()].toUpperCase()+' · '+MN[m-1].toUpperCase()+' '+d+', '+y,24,54);
   // date large
@@ -1763,7 +1763,7 @@ async function nativeShare(){
   const cv=document.getElementById('share-canvas');
   if(!navigator.share){downloadShareCard();return;}
   cv.toBlob(async blob=>{
-    try{await navigator.share({title:'Thought Garden',text:'A memory from my garden.',files:[new File([blob],'memory.png',{type:'image/png'})]});}
+    try{await navigator.share({title:'Bloom',text:'A memory from my garden.',files:[new File([blob],'memory.png',{type:'image/png'})]});}
     catch(e){downloadShareCard();}
   });
 }
